@@ -1,0 +1,685 @@
+// BhuMitra — National Land Acquisition Management Platform
+// Database Schema: PostgreSQL + PostGIS Extension
+// Department of Land Resources (DoLR), Ministry of Rural Development
+// Smart India Hackathon 2026 — Problem Statement 26016
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 1. Identity, Administrative Hierarchy & RBAC
+// ─────────────────────────────────────────────────────────────────────────────
+
+model State {
+  id            String         @id @default(uuid())
+  code          String         @unique // e.g. "GJ", "MH", "RJ", "UP", "MP", "OD"
+  name          String
+  lgdCode       Int?           @unique
+  districts     District[]
+  organizations Organization[]
+  projects      Project[]
+  landParcels   LandParcel[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@map("states")
+}
+
+model District {
+  id            String         @id @default(uuid())
+  name          String
+  code          String?
+  lgdCode       Int?
+  stateId       String
+  state         State          @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  villages      Village[]
+  organizations Organization[]
+  projects      Project[]
+  landParcels   LandParcel[]
+  users         User[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@unique([stateId, name])
+  @@map("districts")
+}
+
+model Village {
+  id          String       @id @default(uuid())
+  name        String
+  lgdCode     Int?
+  districtId  String
+  district    District     @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  landParcels LandParcel[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("villages")
+}
+
+model Organization {
+  id          String       @id @default(uuid())
+  name        String
+  code        String       @unique
+  type        String // MINISTRY, STATE_DEPT, DISTRICT_OFFICE, REQUIRING_BODY, CALA_OFFICE
+  stateId     String?
+  state       State?       @relation(fields: [stateId], references: [id])
+  districtId  String?
+  district    District?    @relation(fields: [districtId], references: [id])
+  users       User[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("organizations")
+}
+
+model Role {
+  id          String           @id @default(uuid())
+  code        String           @unique // SUPER_ADMIN, DISTRICT_COLLECTOR, CALA, STATE_NODAL, JOINT_SECRETARY, TEHSILDAR, etc.
+  name        String
+  description String?
+  isSystem    Boolean          @default(true)
+  permissions RolePermission[]
+  users       User[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(uuid())
+  code        String           @unique // project:create, parcel:view, compensation:approve, etc.
+  module      String // projects, parcels, workflow, compensation, audit, etc.
+  description String?
+  roles       RolePermission[]
+  createdAt   DateTime         @default(now())
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model User {
+  id             String           @id @default(uuid())
+  officerId      String           @unique // e.g. "GJ-DM-VD-0042", "RJ-CALA-JP-109"
+  name           String
+  email          String           @unique
+  passwordHash   String
+  designation    String
+  jurisdiction   String
+  phone          String?
+  isActive       Boolean          @default(true)
+  lastLoginAt    DateTime?
+  roleId         String
+  role           Role             @relation(fields: [roleId], references: [id])
+  organizationId String?
+  organization   Organization?    @relation(fields: [organizationId], references: [id])
+  districtId     String?
+  district       District?        @relation(fields: [districtId], references: [id])
+  auditLogs      AuditLog[]
+  notifications  Notification[]
+  assignedTasks  FieldTask[]
+  assignedActions AcquisitionAction[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2. Projects & Digital Twin
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Project {
+  id                     String               @id @default(uuid())
+  projectCode            String               @unique // e.g. "DOLR-2026-0084"
+  name                   String
+  description            String?
+  type                   String // Highway, Rail, Metro, Energy, Smart City, Airport, Industrial
+  ministry               String
+  requiringBody          String
+  stateId                String
+  state                  State                @relation(fields: [stateId], references: [id])
+  districtId             String
+  district               District             @relation(fields: [districtId], references: [id])
+  stage                  String // e.g. "05 - Section 15 Objection Hearing Completed"
+  stageCode              String // SIA, SEC_11_PRELIMINARY, SEC_15_HEARING, SEC_19_DECLARATION, VALUATION, SEC_23_AWARD, COMPENSATION_DISBURSED, R_AND_R, SEC_38_POSSESSION, COMPLETED
+  status                 String               @default("IN_PROGRESS") // DRAFT, IN_PROGRESS, DELAYED, AT_RISK, COMPLETED
+  totalAreaProposedHa    Float
+  totalAreaNotifiedHa    Float
+  totalAreaAcquiredHa    Float                @default(0)
+  estimatedBudgetCr      Float
+  compensationAssessedCr Float                @default(0)
+  compensationDisbursedCr Float               @default(0)
+  affectedFamilies       Int                  @default(0)
+  slaDaysRemaining       Int
+  riskLevel              String               @default("low") // low, medium, high, critical
+  delayPredictedDays     Int                  @default(0)
+  recommendedAction      String?
+  targetCompletionDate   DateTime
+  startDate              DateTime             @default(now())
+  boundaryGeoJson        Json?
+  milestones             ProjectMilestone[]
+  stakeholders           ProjectStakeholder[]
+  landParcels            LandParcel[]
+  acquisitionCases       AcquisitionCase[]
+  grievances             Grievance[]
+  documents              Document[]
+  rrCases                RRCase[]
+  fieldTasks             FieldTask[]
+  acquisitionActions     AcquisitionAction[]
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+
+  @@index([stateId, stageCode])
+  @@index([projectCode])
+  @@map("projects")
+}
+
+model ProjectMilestone {
+  id            String    @id @default(uuid())
+  projectId     String
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?
+  targetDate    DateTime
+  completedDate DateTime?
+  status        String    @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, OVERDUE
+  stage         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("project_milestones")
+}
+
+model ProjectStakeholder {
+  id           String   @id @default(uuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name         String
+  role         String
+  organization String
+  email        String?
+  phone        String?
+  createdAt    DateTime @default(now())
+
+  @@map("project_stakeholders")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. Land Parcels, Owners & Spatial (PostGIS)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model LandParcel {
+  id                    String             @id @default(uuid())
+  parcelNumber          String             @unique // e.g. "103-10"
+  surveyNo              String // e.g. "103/10"
+  projectId             String
+  project               Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stateId               String
+  state                 State              @relation(fields: [stateId], references: [id])
+  districtId            String
+  district              District           @relation(fields: [districtId], references: [id])
+  villageId             String
+  village               Village            @relation(fields: [villageId], references: [id])
+  totalAreaHa           Float
+  acquiredAreaHa        Float
+  landCategory          String // Agricultural (Irrigated), Agricultural (Dry Crop), Commercial, Residential, Forest Land, Community Gauchar, Government Wasteland
+  landUse               String?
+  stage                 String
+  stageCode             String
+  compensationStatus    String // Disbursed (100%), Partially Paid (80%), Award In Calculation, Hearing Pending
+  compensationAssessed  String
+  compensationAssessedAmount Float         @default(0)
+  rrStatus              String
+  possessionStatus      String // Possession Taken, Handover Scheduled, Pending Compensation, Pending R&R
+  coordinates           String
+  latitude              Float
+  longitude             Float
+  boundaryGeoJson       Json? // Polygon GeoJSON geometry coordinates
+  gazetteNotice         String
+  gazetteDate           DateTime?
+  color                 String             @default("#F59E0B")
+  owners                ParcelOwner[]
+  valuations            Valuation[]
+  awards                CompensationAward[]
+  payments              CompensationPayment[]
+  rrCases               RRCase[]
+  grievances            Grievance[]
+  fieldInspections      FieldInspection[]
+  documents             Document[]
+  acquisitionCases      AcquisitionCase[]
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@index([projectId, surveyNo])
+  @@index([districtId, stageCode])
+  @@map("land_parcels")
+}
+
+model ParcelOwner {
+  id                  String     @id @default(uuid())
+  parcelId            String
+  parcel              LandParcel @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+  name                String
+  sharePercentage     Float      @default(100)
+  bankAccountVerified Boolean    @default(false)
+  panNumber           String?
+  phone               String?
+  isMainOwner         Boolean    @default(true)
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  @@map("parcel_owners")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. Acquisition Workflow, Cases & Action Centre
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AcquisitionCase {
+  id            String              @id @default(uuid())
+  caseNumber    String              @unique // e.g. "ACQ-2026-084-01"
+  projectId     String
+  project       Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parcelId      String
+  parcel        LandParcel          @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+  currentStage  String
+  initiatedAt   DateTime            @default(now())
+  completedAt   DateTime?
+  slaDueDate    DateTime
+  slaStatus     String              @default("ON_TRACK") // ON_TRACK, WARNING, BREACHED
+  status        String              @default("ACTIVE")
+  notices       AcquisitionNotice[]
+  actions       AcquisitionAction[]
+  transitions   WorkflowTransition[]
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@map("acquisition_cases")
+}
+
+model AcquisitionNotice {
+  id                 String          @id @default(uuid())
+  caseId             String
+  case               AcquisitionCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  noticeType         String // SECTION_4_SIA, SECTION_11_PRELIMINARY, SECTION_15_HEARING, SECTION_19_DECLARATION, SECTION_23_AWARD, SECTION_38_POSSESSION
+  noticeNumber       String
+  issueDate          DateTime
+  gazetteDate        DateTime?
+  publishedInGazette Boolean         @default(true)
+  pdfUrl             String?
+  status             String          @default("PUBLISHED")
+  createdAt          DateTime        @default(now())
+
+  @@map("acquisition_notices")
+}
+
+model AcquisitionAction {
+  id              String           @id @default(uuid())
+  caseId          String?
+  case            AcquisitionCase? @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  projectId       String
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title           String
+  description     String
+  actionType      String // SLA_BREACH_RESOLUTION, GAZETTE_RESPONSE, OBJECTION_HEARING, VALUATION_APPROVAL, DISBURSAL_MANDATE_HOLD, POSSESSION_HANDOVER, ENV_CLEARANCE
+  priority        String           @default("medium") // low, medium, high, critical
+  assignedToUserId String?
+  assignedToUser  User?            @relation(fields: [assignedToUserId], references: [id])
+  assignedRole    String // DISTRICT_COLLECTOR, CALA, STATE_NODAL, etc.
+  dueDate         DateTime
+  completedAt     DateTime?
+  status          String           @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, ESCALATED
+  escalationLevel Int              @default(0)
+  remarks         String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([assignedRole, status])
+  @@map("acquisition_actions")
+}
+
+model WorkflowTransition {
+  id          String          @id @default(uuid())
+  caseId      String
+  case        AcquisitionCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  fromStage   String
+  toStage     String
+  actorId     String
+  actorName   String
+  actorRole   String
+  remarks     String
+  slaHours    Int             @default(48)
+  slaBreached Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+
+  @@map("workflow_transitions")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. Compensation, Valuation & PFMS / DBT Disbursal
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Valuation {
+  id                          String     @id @default(uuid())
+  parcelId                    String
+  parcel                      LandParcel @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+  baseLandRatePerHa           Float
+  multiplicationFactor        Float      @default(1.0)
+  marketValueTotal            Float
+  solatiumPercentage          Float      @default(100.0)
+  solatiumAmount              Float
+  assetsValueTreesStructures  Float      @default(0)
+  totalAssessedCompensation   Float
+  assessedBy                  String
+  assessedDate                DateTime   @default(now())
+  status                      String     @default("APPROVED") // DRAFT, RECOMMENDED, APPROVED
+  createdAt                   DateTime   @default(now())
+
+  @@map("valuations")
+}
+
+model CompensationAward {
+  id                 String                @id @default(uuid())
+  awardNumber        String                @unique
+  parcelId           String
+  parcel             LandParcel            @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+  awardDate          DateTime              @default(now())
+  totalAwardAmount   Float
+  solatiumAmount     Float
+  additionalInterest Float                 @default(0)
+  approvedBy         String
+  status             String                @default("APPROVED") // APPROVED, DISBURSED, CONTESTED
+  payments           CompensationPayment[]
+  createdAt          DateTime              @default(now())
+
+  @@map("compensation_awards")
+}
+
+model CompensationPayment {
+  id                       String             @id @default(uuid())
+  awardId                  String
+  award                    CompensationAward  @relation(fields: [awardId], references: [id], onDelete: Cascade)
+  parcelId                 String
+  parcel                   LandParcel         @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+  beneficiaryName          String
+  beneficiaryAccountMasked String
+  bankName                 String
+  ifscCode                 String
+  amount                   Float
+  paymentMethod            String             @default("PFMS_DBT") // PFMS_DBT, TREASURY_CHALLAN, ESCROW
+  paymentDate              DateTime?
+  transactionRef           String?
+  status                   String             @default("COMPLETED") // PENDING, PROCESSING, COMPLETED, FAILED, ON_HOLD
+  remarks                  String?
+  createdAt                DateTime           @default(now())
+
+  @@map("compensation_payments")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 6. Rehabilitation & Resettlement (R&R)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model RRCase {
+  id                     String          @id @default(uuid())
+  projectId              String
+  project                Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parcelId               String
+  parcel                 LandParcel      @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+  familyHeadName         String
+  familySize             Int             @default(4)
+  isScSt                 Boolean         @default(false)
+  isBpl                  Boolean         @default(false)
+  displacementType       String          @default("ECONOMIC_DISPLACEMENT") // PHYSICAL_DISPLACEMENT, ECONOMIC_DISPLACEMENT, BOTH
+  packageType            String
+  entitlements           String[]
+  resettlementPlotNo     String?
+  resettlementColonyName String?
+  subsistenceGrantAmount Float           @default(0)
+  relocationGrantAmount  Float           @default(0)
+  status                 String          @default("PACKAGE_SANCTIONED") // ELIGIBLE, PACKAGE_SANCTIONED, PLOT_ALLOTTED, DISBURSED, COMPLETED
+  beneficiaries          RRBeneficiary[]
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+
+  @@map("rr_cases")
+}
+
+model RRBeneficiary {
+  id           String   @id @default(uuid())
+  rrCaseId     String
+  rrCase       RRCase   @relation(fields: [rrCaseId], references: [id], onDelete: Cascade)
+  name         String
+  relationship String
+  age          Int
+  gender       String
+  createdAt    DateTime @default(now())
+
+  @@map("rr_beneficiaries")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 7. Grievance Redressal & Objections
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Grievance {
+  id                  String            @id @default(uuid())
+  ticketNumber        String            @unique // e.g. "GRV-2026-0038"
+  projectId           String
+  project             Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parcelId            String?
+  parcel              LandParcel?       @relation(fields: [parcelId], references: [id], onDelete: SetNull)
+  complainantName     String
+  phone               String?
+  category            String // COMPENSATION_DISPUTE, MEASUREMENT_ERROR, OWNERSHIP_CLAIM, R_AND_R_DENIAL, DELAY_IN_PAYMENT, PROCEDURAL_LAPSE
+  description         String
+  filingDate          DateTime          @default(now())
+  hearingDate         DateTime?
+  slaDueDate          DateTime
+  isOverdue           Boolean           @default(false)
+  assignedOfficerName String
+  status              String            @default("SUBMITTED") // SUBMITTED, UNDER_INVESTIGATION, HEARING_SCHEDULED, RESOLVED, REJECTED, CLOSED
+  resolutionNotes     String?
+  resolutionDate      DateTime?
+  actions             GrievanceAction[]
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  @@map("grievances")
+}
+
+model GrievanceAction {
+  id          String    @id @default(uuid())
+  grievanceId String
+  grievance   Grievance @relation(fields: [grievanceId], references: [id], onDelete: Cascade)
+  actorName   String
+  actorRole   String
+  actionTaken String
+  comments    String
+  timestamp   DateTime  @default(now())
+
+  @@map("grievance_actions")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 8. Field Operations & Geotagged Verification
+// ─────────────────────────────────────────────────────────────────────────────
+
+model FieldTask {
+  id                  String            @id @default(uuid())
+  projectId           String
+  project             Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignedToUserId    String?
+  assignedToUser      User?             @relation(fields: [assignedToUserId], references: [id])
+  taskType            String // BOUNDARY_SURVEY, TREE_VALUATION, STRUCTURE_ASSESSMENT, POSSESSION_HANDOVER
+  scheduledDate       DateTime
+  completedDate       DateTime?
+  status              String            @default("ASSIGNED") // ASSIGNED, IN_PROGRESS, COMPLETED, CANCELLED
+  notes               String?
+  inspections         FieldInspection[]
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  @@map("field_tasks")
+}
+
+model FieldInspection {
+  id                 String     @id @default(uuid())
+  taskId             String?
+  task               FieldTask? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  parcelId           String
+  parcel             LandParcel @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+  inspectorName      String
+  inspectionDate     DateTime   @default(now())
+  gpsLatitude        Float
+  gpsLongitude       Float
+  gpsAccuracyMeters  Float      @default(3.2)
+  observations       String
+  encroachmentFound  Boolean    @default(false)
+  evidencePhotos     String[]
+  verificationStatus String     @default("VERIFIED") // VERIFIED, DISCREPANCY_NOTED, RE_SURVEY_REQUIRED
+  createdAt          DateTime   @default(now())
+
+  @@map("field_inspections")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 9. Document Management & Tamper-Evident Vault
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Document {
+  id             String            @id @default(uuid())
+  title          String
+  documentType   String // GAZETTE_NOTIFICATION, SIA_REPORT, KHASRA_MAP, VALUATION_CERTIFICATE, AWARD_SHEET, PAYMENT_RECEIPT, FIELD_PHOTO
+  fileUrl        String
+  fileSize       Int
+  mimeType       String
+  checksumSha256 String
+  version        Int               @default(1)
+  uploadedBy     String
+  projectId      String?
+  project        Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  parcelId       String?
+  parcel         LandParcel?       @relation(fields: [parcelId], references: [id], onDelete: SetNull)
+  isVerified     Boolean           @default(true)
+  versions       DocumentVersion[]
+  createdAt      DateTime          @default(now())
+
+  @@map("documents")
+}
+
+model DocumentVersion {
+  id             String   @id @default(uuid())
+  documentId     String
+  document       Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  versionNumber  Int
+  storageKey     String
+  fileSize       Int
+  checksumSha256 String
+  uploadedAt     DateTime @default(now())
+
+  @@map("document_versions")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 10. In-App Notifications & SLA Alert Rules
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String // SLA_BREACH, ACTION_REQUIRED, STATUS_UPDATE, COMPENSATION_READY, GRIEVANCE_FILED
+  priority  String   @default("medium") // low, medium, high, critical
+  linkUrl   String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+model AlertRule {
+  id            String   @id @default(uuid())
+  name          String
+  metric        String
+  thresholdDays Int
+  severity      String
+  targetRole    String
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  @@map("alert_rules")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 11. Immutable Audit Trail
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  actorId       String?
+  user          User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorName     String
+  actorRole     String
+  action        String // LOGIN, LOGOUT, CREATE, UPDATE, APPROVE, REJECT, DISBURSE, EXPORT
+  entityType    String // PROJECT, PARCEL, COMPENSATION, AWARD, GRIEVANCE, DOCUMENT, USER
+  entityId      String
+  previousState Json?
+  newState      Json?
+  ipAddress     String?
+  remarks       String?
+  timestamp     DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([timestamp])
+  @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 12. Saved Reports & Exports
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ReportDefinition {
+  id          String   @id @default(uuid())
+  name        String
+  category    String
+  description String?
+  queryConfig Json
+  createdAt   DateTime @default(now())
+
+  @@map("report_definitions")
+}
+
+model ExportJob {
+  id          String    @id @default(uuid())
+  userId      String
+  reportType  String
+  format      String // CSV, EXCEL, JSON
+  status      String    @default("COMPLETED")
+  fileUrl     String?
+  generatedAt DateTime  @default(now())
+
+  @@map("export_jobs")
+}

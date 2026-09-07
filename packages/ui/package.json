@@ -1,0 +1,31 @@
+{
+  "name": "@bhumitra/ui",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared UI component library for BhuMitra — Government Design System (implemented in Stage 2)",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@bhumitra/config": "workspace:*",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5.7.3",
+    "rimraf": "^6.0.1"
+  },
+  "keywords": [
+    "bhumitra",
+    "government",
+    "design-system",
+    "ui"
+  ]
+}

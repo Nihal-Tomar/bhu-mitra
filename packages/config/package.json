@@ -1,0 +1,25 @@
+{
+  "name": "@bhumitra/config",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared ESLint, TypeScript, and Prettier configurations for BhuMitra monorepo",
+  "exports": {
+    "./eslint/base": "./eslint/base.js",
+    "./eslint/next": "./eslint/next.js",
+    "./eslint/nestjs": "./eslint/nestjs.js",
+    "./prettier": "./prettier.config.js",
+    "./tsconfig/base": "./tsconfig/base.json",
+    "./tsconfig/nextjs": "./tsconfig/nextjs.json",
+    "./tsconfig/nestjs": "./tsconfig/nestjs.json",
+    "./tsconfig/library": "./tsconfig/library.json"
+  },
+  "dependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.32.1",
+    "@typescript-eslint/parser": "^8.32.1",
+    "eslint": "^9.27.0",
+    "eslint-config-next": "^15.3.3",
+    "eslint-plugin-import": "^2.31.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.7.3"
+  }
+}

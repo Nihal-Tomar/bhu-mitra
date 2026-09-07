@@ -1,0 +1,45 @@
+{
+  "name": "bhumitra",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BhuMitra — National Land Acquisition Intelligence & Management Platform | Smart India Hackathon 2026",
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:web": "turbo run dev --filter=@bhumitra/web",
+    "dev:api": "turbo run dev --filter=@bhumitra/api",
+    "dev:intelligence": "turbo run dev --filter=@bhumitra/intelligence",
+    "build": "turbo run build",
+    "build:web": "turbo run build --filter=@bhumitra/web",
+    "build:api": "turbo run build --filter=@bhumitra/api",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "format": "turbo run format",
+    "format:check": "turbo run format:check",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "clean": "turbo run clean && rimraf node_modules",
+    "docker:up": "docker compose -f infra/docker-compose.yml up -d",
+    "docker:down": "docker compose -f infra/docker-compose.yml down",
+    "docker:down:volumes": "docker compose -f infra/docker-compose.yml down -v",
+    "docker:logs": "docker compose -f infra/docker-compose.yml logs -f",
+    "docker:rebuild": "docker compose -f infra/docker-compose.yml up -d --build",
+    "docker:status": "docker compose -f infra/docker-compose.yml ps",
+    "db:migrate": "turbo run db:migrate --filter=@bhumitra/api",
+    "db:seed": "turbo run db:seed --filter=@bhumitra/api",
+    "db:reset": "turbo run db:reset --filter=@bhumitra/api",
+    "db:studio": "turbo run db:studio --filter=@bhumitra/api",
+    "health:check": "node infra/scripts/health-check.mjs",
+    "prepare": "node -e \"try { require('husky').install() } catch (e) { if (e.code !== 'MODULE_NOT_FOUND') throw e }\""
+  },
+  "devDependencies": {
+    "turbo": "^2.5.4",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@10.13.1"
+}
