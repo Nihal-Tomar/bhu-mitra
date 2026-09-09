@@ -4,37 +4,68 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { GovMasthead } from '@bhumitra/ui';
 import { apiGetDashboard, type DashboardMetrics, type StateKpi, type RecentProject, type PriorityAction } from '../../../lib/api';
+import { ACQUISITION_PROJECTS } from '../../../data/homepageData';
 
-// ─── Fallback data (shown while fetching or if API unreachable) ───────────────
+// ─── Dynamic Fallback Data (derived from ACQUISITION_PROJECTS) ───────────────
+
+const calculatedTotalProjects = ACQUISITION_PROJECTS.length;
+const calculatedTotalAreaHa = Math.round(ACQUISITION_PROJECTS.reduce((acc, p) => acc + p.landProposedHa, 0));
+const calculatedTotalAreaAcquiredHa = Math.round(ACQUISITION_PROJECTS.reduce((acc, p) => acc + p.landAcquiredHa, 0));
+const calculatedCompensationPaidCr = Math.round(ACQUISITION_PROJECTS.reduce((acc, p) => acc + p.compensationDisbursedCr, 0));
+const calculatedCompensationAssessedCr = Math.round(ACQUISITION_PROJECTS.reduce((acc, p) => acc + p.compensationAssessedCr, 0));
+const calculatedSlaComplianceRate = Number(((ACQUISITION_PROJECTS.filter((p) => p.slaDaysRemaining >= 0).length / ACQUISITION_PROJECTS.length) * 100).toFixed(1));
+const calculatedSlaAlertsCount = ACQUISITION_PROJECTS.filter((p) => p.riskLevel === 'Critical' || p.slaDaysRemaining < 5).length;
+const calculatedPendingObjections = ACQUISITION_PROJECTS.reduce((acc, p) => acc + (p.stage.includes('15') || p.riskFactors?.length ? p.riskFactors.length * 2 : 1), 0);
 
 const FALLBACK_KPIS = {
-  totalProjects: 1284,
-  totalAreaHa: 4850,
-  totalAreaAcquiredHa: 1800,
-  compensationPaidCr: 1248,
-  compensationAssessedCr: 2400,
-  slaComplianceRate: 91.4,
-  slaAlertsCount: 14,
-  pendingObjections: 68,
+  totalProjects: calculatedTotalProjects,
+  totalAreaHa: calculatedTotalAreaHa,
+  totalAreaAcquiredHa: calculatedTotalAreaAcquiredHa,
+  compensationPaidCr: calculatedCompensationPaidCr,
+  compensationAssessedCr: calculatedCompensationAssessedCr,
+  slaComplianceRate: calculatedSlaComplianceRate,
+  slaAlertsCount: calculatedSlaAlertsCount,
+  pendingObjections: calculatedPendingObjections,
 };
 
-const FALLBACK_STATE_KPIS: StateKpi[] = [
-  { state: 'Gujarat', projects: 148, area: '820 Ha', areaHa: 820, sla: 94, risk: 2, color: '#FF9933' },
-  { state: 'Rajasthan', projects: 112, area: '640 Ha', areaHa: 640, sla: 87, risk: 5, color: '#B42318' },
-  { state: 'Maharashtra', projects: 195, area: '1,240 Ha', areaHa: 1240, sla: 91, risk: 3, color: '#155EEF' },
-  { state: 'Uttar Pradesh', projects: 241, area: '1,580 Ha', areaHa: 1580, sla: 82, risk: 8, color: '#B45309' },
-  { state: 'Madhya Pradesh', projects: 98, area: '520 Ha', areaHa: 520, sla: 96, risk: 1, color: '#138808' },
-  { state: 'Odisha', projects: 76, area: '380 Ha', areaHa: 380, sla: 88, risk: 3, color: '#7C3AED' },
-];
+const stateColors: Record<string, string> = {
+  Gujarat: '#FF9933',
+  Rajasthan: '#B42318',
+  Maharashtra: '#155EEF',
+  'Uttar Pradesh': '#B45309',
+  'Madhya Pradesh': '#138808',
+  Odisha: '#7C3AED',
+  Karnataka: '#0C5A37',
+  'Tamil Nadu': '#D97706',
+};
 
-const FALLBACK_PROJECTS: RecentProject[] = [
-  { id: 'DOLR-2026-0084', name: 'NH-48 Bharatmala Six-Laning', state: 'Gujarat', stage: 'Sec. 15 Hearing', area: '142.5 Ha', sla: 8, risk: 'high' },
-  { id: 'DOLR-2026-0071', name: 'Eastern Dedicated Freight Corridor', state: 'Rajasthan', stage: 'Sec. 19 Declared', area: '310.0 Ha', sla: 24, risk: 'medium' },
-  { id: 'DOLR-2026-0066', name: 'Pune–Nashik High Speed Rail', state: 'Maharashtra', stage: 'Sec. 11 Gazette', area: '218.7 Ha', sla: 45, risk: 'low' },
-  { id: 'DOLR-2026-0059', name: 'Lucknow Metro Phase III', state: 'Uttar Pradesh', stage: 'Compensation', area: '64.2 Ha', sla: -3, risk: 'critical' },
-  { id: 'DOLR-2026-0048', name: 'Bhopal Smart City Ring Road', state: 'Madhya Pradesh', stage: 'Sec. 23 Award', area: '95.8 Ha', sla: 32, risk: 'low' },
-  { id: 'DOLR-2026-0041', name: 'Amritsar Smart City Metro', state: 'Punjab', stage: 'Sec. 15 Hearing', area: '51.3 Ha', sla: 12, risk: 'medium' },
-];
+const FALLBACK_STATE_KPIS: StateKpi[] = Array.from(new Set(ACQUISITION_PROJECTS.map((p) => p.state)))
+  .slice(0, 6)
+  .map((state) => {
+    const list = ACQUISITION_PROJECTS.filter((p) => p.state === state);
+    const areaHa = Math.round(list.reduce((sum, p) => sum + p.landProposedHa, 0));
+    const sla = Number(((list.filter((p) => p.slaDaysRemaining >= 0).length / list.length) * 100).toFixed(0));
+    const risk = list.filter((p) => p.riskLevel === 'Critical' || p.riskLevel === 'High').length;
+    return {
+      state,
+      projects: list.length,
+      area: `${areaHa.toLocaleString()} Ha`,
+      areaHa,
+      sla,
+      risk,
+      color: stateColors[state] || '#155EEF',
+    };
+  });
+
+const FALLBACK_PROJECTS: RecentProject[] = ACQUISITION_PROJECTS.slice(0, 6).map((p) => ({
+  id: p.id,
+  name: p.name,
+  state: p.state,
+  stage: p.stage.replace(/^\d+\s*-\s*/, ''),
+  area: `${p.landProposedHa} Ha`,
+  sla: p.slaDaysRemaining,
+  risk: p.riskLevel.toLowerCase(),
+}));
 
 const FALLBACK_PRIORITY_ACTIONS: PriorityAction[] = [
   { severity: 'critical', label: 'SLA Breach — Section 19', count: 3, detail: 'NH-48, Lucknow Metro, DFC Phase II overdue' },

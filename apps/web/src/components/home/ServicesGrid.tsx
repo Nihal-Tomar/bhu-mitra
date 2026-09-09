@@ -139,7 +139,7 @@ export const ServicesGrid: React.FC<ServicesGridProps> = ({ onSelectProject }) =
 
             {/* Sector Filters */}
             <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl">
-              {['All', 'Highways', 'Railways', 'Renewable Energy', 'Urban Infra'].map((type) => (
+              {['All', 'Highways', 'Railways', 'Renewable Energy', 'Urban Infra', 'Industrial Corridor'].map((type) => (
                 <button
                   key={type}
                   type="button"

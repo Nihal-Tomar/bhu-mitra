@@ -6,6 +6,8 @@
  * contained herein represent ILLUSTRATIVE MODEL / TELEMETRY DATA.
  */
 
+import { EXPANDED_SECTOR_PROJECTS } from './sectorProjectsData';
+
 export const DEMO_DATA_DISCLAIMER = 'National Land Acquisition Management System — Model Telemetry Dataset' as const;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -68,6 +70,17 @@ export interface AcquisitionProject {
   delayPredictedDays: number;
   riskFactors: string[];
   recommendedAction: string;
+  // Extended metadata for national sector tracking & reporting
+  projectLocation?: string;
+  implementingAgency?: string;
+  landRemainingHa?: number;
+  status?: string;
+  acquisitionStatus?: string;
+  compensationStatus?: string;
+  startDate?: string;
+  expectedCompletionDate?: string;
+  estimatedCostCr?: number;
+  dataSource?: string;
 }
 
 export interface StakeholderWorkspace {
@@ -349,19 +362,24 @@ export const LIFECYCLE_STAGES: LifecycleStage[] = [
 
 // ── 4. Sample Acquisition Projects ────────────────────────────────────────────
 
-export const SAMPLE_PROJECTS: AcquisitionProject[] = [
+// ── 4. Sample Acquisition Projects ────────────────────────────────────────────
+
+export const BASE_DEMO_PROJECTS: AcquisitionProject[] = [
   {
     id: 'DOLR-2026-0084',
     name: 'NH-48 Bharatmala Six-Laning Corridor',
     type: 'Highways',
     ministry: 'Ministry of Road Transport & Highways / NHAI',
+    implementingAgency: 'National Highways Authority of India (NHAI)',
     state: 'Gujarat',
     district: 'Vadodara & Bharuch',
+    projectLocation: 'Vadodara to Bharuch Section, NH-48',
     stage: '05 - Section 15 Objection Hearings',
     stageProgress: 52,
     landProposedHa: 142.5,
     landNotifiedHa: 138.2,
     landAcquiredHa: 68.4,
+    landRemainingHa: 74.1,
     compensationAssessedCr: 284.5,
     compensationDisbursedCr: 142.0,
     affectedFamilies: 1240,
@@ -369,6 +387,13 @@ export const SAMPLE_PROJECTS: AcquisitionProject[] = [
     slaDaysRemaining: 8,
     riskLevel: 'High',
     delayPredictedDays: 22,
+    status: 'Under Construction',
+    acquisitionStatus: 'Sec. 15 Objection Hearings',
+    compensationStatus: '50% Disbursed',
+    startDate: '2023-01-15',
+    expectedCompletionDate: '2026-12-31',
+    estimatedCostCr: 2150,
+    dataSource: 'Demo / Sample Data',
     riskFactors: [
       '23 land parcels in Karjan tehsil have pending Section 15 objections',
       'R&R resettlement layout pending approval from State Town Planning authority',
@@ -381,13 +406,16 @@ export const SAMPLE_PROJECTS: AcquisitionProject[] = [
     name: 'Western Dedicated Freight Corridor (Phase 2)',
     type: 'Railways',
     ministry: 'Ministry of Railways / DFCCIL',
+    implementingAgency: 'Dedicated Freight Corridor Corporation of India (DFCCIL)',
     state: 'Rajasthan',
     district: 'Alwar & Jaipur',
+    projectLocation: 'Rewari to Madar Section via Alwar & Jaipur',
     stage: '05 - Section 19 Declaration Published',
     stageProgress: 64,
     landProposedHa: 310.0,
     landNotifiedHa: 304.5,
     landAcquiredHa: 195.0,
+    landRemainingHa: 115.0,
     compensationAssessedCr: 540.0,
     compensationDisbursedCr: 380.5,
     affectedFamilies: 2180,
@@ -395,6 +423,13 @@ export const SAMPLE_PROJECTS: AcquisitionProject[] = [
     slaDaysRemaining: 24,
     riskLevel: 'Medium',
     delayPredictedDays: 9,
+    status: 'Under Construction',
+    acquisitionStatus: 'Sec. 19 Declared & Award Inquiry',
+    compensationStatus: '70.5% Disbursed',
+    startDate: '2021-08-01',
+    expectedCompletionDate: '2026-11-30',
+    estimatedCostCr: 4850,
+    dataSource: 'Demo / Sample Data',
     riskFactors: [
       '14 court injunction appeals regarding tree/well valuation multipliers',
       'Escrow fund top-up of ₹45 Cr required from implementing agency',
@@ -406,13 +441,16 @@ export const SAMPLE_PROJECTS: AcquisitionProject[] = [
     name: 'Pune–Nashik Semi-High Speed Rail Corridor',
     type: 'Railways',
     ministry: 'Maharashtra Rail Infrastructure Dev. Corp.',
+    implementingAgency: 'Maharashtra Rail Infrastructure Development Corp. (MahaRail)',
     state: 'Maharashtra',
     district: 'Pune & Ahmednagar',
+    projectLocation: 'Pune–Nashik Semi-High Speed Alignment',
     stage: '04 - Section 11 Gazette Notification',
     stageProgress: 42,
     landProposedHa: 218.7,
     landNotifiedHa: 218.7,
     landAcquiredHa: 45.2,
+    landRemainingHa: 173.5,
     compensationAssessedCr: 412.0,
     compensationDisbursedCr: 88.0,
     affectedFamilies: 1840,
@@ -420,6 +458,13 @@ export const SAMPLE_PROJECTS: AcquisitionProject[] = [
     slaDaysRemaining: 45,
     riskLevel: 'Low',
     delayPredictedDays: 0,
+    status: 'Land Acquisition Active',
+    acquisitionStatus: 'Section 11 Gazette Issued',
+    compensationStatus: '21.4% Disbursed',
+    startDate: '2023-05-10',
+    expectedCompletionDate: '2027-12-31',
+    estimatedCostCr: 3600,
+    dataSource: 'Demo / Sample Data',
     riskFactors: [
       'Cadastral drone survey 100% completed',
       'Gram Sabha resolutions obtained in 41 out of 44 villages',
@@ -431,13 +476,16 @@ export const SAMPLE_PROJECTS: AcquisitionProject[] = [
     name: 'Lucknow Metro Extension Line 3',
     type: 'Urban Infra',
     ministry: 'Ministry of Housing & Urban Affairs / UPMRC',
+    implementingAgency: 'Uttar Pradesh Metro Rail Corporation (UPMRC)',
     state: 'Uttar Pradesh',
     district: 'Lucknow',
+    projectLocation: 'Munshipulia to Lucknow Airport Line 3',
     stage: '06 - Compensation Disbursement',
     stageProgress: 72,
     landProposedHa: 64.2,
     landNotifiedHa: 64.2,
     landAcquiredHa: 48.0,
+    landRemainingHa: 16.2,
     compensationAssessedCr: 195.0,
     compensationDisbursedCr: 128.5,
     affectedFamilies: 620,
@@ -445,6 +493,13 @@ export const SAMPLE_PROJECTS: AcquisitionProject[] = [
     slaDaysRemaining: -3,
     riskLevel: 'Critical',
     delayPredictedDays: 34,
+    status: 'Under Construction',
+    acquisitionStatus: 'Compensation & Tenant Rehabilitation',
+    compensationStatus: '65.9% Disbursed',
+    startDate: '2022-02-15',
+    expectedCompletionDate: '2026-09-30',
+    estimatedCostCr: 2200,
+    dataSource: 'Demo / Sample Data',
     riskFactors: [
       'SLA breached by 3 days for commercial tenant rehabilitation determination',
       'Bank IFSC mismatch for 38 commercial shopkeeper families',
@@ -456,13 +511,16 @@ export const SAMPLE_PROJECTS: AcquisitionProject[] = [
     name: 'Rewa Ultra Mega Solar Park Corridor',
     type: 'Renewable Energy',
     ministry: 'Ministry of New & Renewable Energy / RUMSL',
+    implementingAgency: 'Rewa Ultra Mega Solar Limited (RUMSL)',
     state: 'Madhya Pradesh',
     district: 'Rewa',
+    projectLocation: 'Gurh Tehsil Solar Array Zone, Rewa',
     stage: '08 - Possession & Handover',
     stageProgress: 94,
     landProposedHa: 480.0,
     landNotifiedHa: 480.0,
     landAcquiredHa: 476.5,
+    landRemainingHa: 3.5,
     compensationAssessedCr: 320.0,
     compensationDisbursedCr: 318.2,
     affectedFamilies: 890,
@@ -470,12 +528,24 @@ export const SAMPLE_PROJECTS: AcquisitionProject[] = [
     slaDaysRemaining: 18,
     riskLevel: 'Low',
     delayPredictedDays: 0,
+    status: 'Near Completion',
+    acquisitionStatus: 'Possession 99.2% Completed',
+    compensationStatus: '99.4% Disbursed',
+    startDate: '2021-03-01',
+    expectedCompletionDate: '2025-10-31',
+    estimatedCostCr: 1750,
+    dataSource: 'Demo / Sample Data',
     riskFactors: [
       'Possession completed for 99.2% of proposed solar array area',
       'Final mutation in revenue record underway in Tehsil office',
     ],
     recommendedAction: 'Issue final Section 38 completion memo and archive project audit trail.',
   },
+];
+
+export const SAMPLE_PROJECTS: AcquisitionProject[] = [
+  ...BASE_DEMO_PROJECTS,
+  ...EXPANDED_SECTOR_PROJECTS,
 ];
 
 export const ACQUISITION_PROJECTS = SAMPLE_PROJECTS;

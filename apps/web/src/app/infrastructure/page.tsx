@@ -109,8 +109,26 @@ function InfrastructureContent() {
     }
   }, [searchParams]);
 
+  const sectorList = SECTOR_METADATA.map((s) => {
+    const matching = ACQUISITION_PROJECTS.filter((p) =>
+      p.type.toLowerCase().includes(s.key.toLowerCase())
+    );
+    const count = matching.length;
+    const proposed = matching.reduce((sum, p) => sum + p.landProposedHa, 0);
+    const acquired = matching.reduce((sum, p) => sum + p.landAcquiredHa, 0);
+    const comp = matching.reduce((sum, p) => sum + p.compensationDisbursedCr, 0);
+    const possessionPct = proposed > 0 ? Math.round((acquired / proposed) * 100) : s.possessionPct;
+    return {
+      ...s,
+      projectsCount: count > 0 ? count : s.projectsCount,
+      landHa: proposed > 0 ? `${Math.round(proposed).toLocaleString()} Ha` : s.landHa,
+      compensationCr: comp > 0 ? `₹${Math.round(comp).toLocaleString()} Cr` : s.compensationCr,
+      possessionPct,
+    };
+  });
+
   const activeSector =
-    SECTOR_METADATA.find((s) => s.id === activeSectorId) || SECTOR_METADATA[0];
+    sectorList.find((s) => s.id === activeSectorId) || sectorList[0];
 
   const sectorProjects = ACQUISITION_PROJECTS.filter((p) =>
     p.type.toLowerCase().includes(activeSector.key.toLowerCase())
@@ -153,7 +171,7 @@ function InfrastructureContent() {
 
       {/* 5 Sector Selection Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
-        {SECTOR_METADATA.map((s) => {
+        {sectorList.map((s) => {
           const isSelected = s.id === activeSectorId;
           return (
             <button

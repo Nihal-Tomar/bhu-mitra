@@ -16,17 +16,22 @@ export default function ProjectsPage() {
   const [riskFilter, setRiskFilter] = useState('All');
   const [activeProject, setActiveProject] = useState<AcquisitionProject | null>(null);
 
-  const states = ['All', ...Array.from(new Set(ACQUISITION_PROJECTS.map((p) => p.state)))];
+  const states = ['All', ...Array.from(new Set(ACQUISITION_PROJECTS.map((p) => p.state))).sort()];
   const sectors = ['All', 'Highways', 'Railways', 'Renewable Energy', 'Urban Infra', 'Industrial Corridor'];
   const stages = ['All', 'Proposal', 'Administrative Scrutiny', 'Section 11 Notification', 'Section 15 Hearing', 'Section 19 Declaration', 'Section 23 Award', 'Compensation Disbursement', 'R&R Implementation', 'Possession Complete'];
   const risks = ['All', 'Low', 'Medium', 'High', 'Critical'];
 
   const filtered = ACQUISITION_PROJECTS.filter((p) => {
+    const term = search.toLowerCase();
     const matchesSearch =
       !search ||
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.id.toLowerCase().includes(search.toLowerCase()) ||
-      p.district.toLowerCase().includes(search.toLowerCase());
+      p.name.toLowerCase().includes(term) ||
+      p.id.toLowerCase().includes(term) ||
+      p.district.toLowerCase().includes(term) ||
+      p.state.toLowerCase().includes(term) ||
+      p.ministry.toLowerCase().includes(term) ||
+      (p.implementingAgency && p.implementingAgency.toLowerCase().includes(term)) ||
+      (p.projectLocation && p.projectLocation.toLowerCase().includes(term));
     const matchesState = stateFilter === 'All' || p.state === stateFilter;
     const matchesSector = sectorFilter === 'All' || p.type === sectorFilter;
     const matchesStage = stageFilter === 'All' || p.stage.toLowerCase().includes(stageFilter.toLowerCase());

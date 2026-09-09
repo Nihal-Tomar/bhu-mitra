@@ -31,13 +31,26 @@ export default function CommandPage() {
 
   const filteredProjects = ACQUISITION_PROJECTS.filter((p) => {
     const matchesSector = sectorFilter === 'All' || p.type.toLowerCase().includes(sectorFilter.toLowerCase());
+    const term = searchQuery.toLowerCase();
     const matchesSearch =
       !searchQuery ||
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.state.toLowerCase().includes(searchQuery.toLowerCase());
+      p.name.toLowerCase().includes(term) ||
+      p.id.toLowerCase().includes(term) ||
+      p.state.toLowerCase().includes(term) ||
+      p.district.toLowerCase().includes(term) ||
+      p.ministry.toLowerCase().includes(term) ||
+      (p.implementingAgency && p.implementingAgency.toLowerCase().includes(term)) ||
+      (p.projectLocation && p.projectLocation.toLowerCase().includes(term));
     return matchesSector && matchesSearch;
   });
+
+  const fallbackTotalProjects = ACQUISITION_PROJECTS.length;
+  const fallbackTotalNotifiedHa = Math.round(ACQUISITION_PROJECTS.reduce((s, p) => s + p.landNotifiedHa, 0));
+  const fallbackTotalAcquiredHa = Math.round(ACQUISITION_PROJECTS.reduce((s, p) => s + p.landAcquiredHa, 0));
+  const fallbackCompensationPaidCr = Math.round(ACQUISITION_PROJECTS.reduce((s, p) => s + p.compensationDisbursedCr, 0));
+  const fallbackSlaComplianceRate = Number(((ACQUISITION_PROJECTS.filter((p) => p.slaDaysRemaining >= 0).length / ACQUISITION_PROJECTS.length) * 100).toFixed(1));
+  const fallbackAlertsCount = ACQUISITION_PROJECTS.filter((p) => p.riskLevel === 'Critical' || p.slaDaysRemaining < 5).length;
+  const fallbackPossessionPct = fallbackTotalNotifiedHa > 0 ? ((fallbackTotalAcquiredHa / fallbackTotalNotifiedHa) * 100).toFixed(1) : '58.0';
 
   const stateDistribution = [
     { state: isHindi ? 'गुजरात' : 'Gujarat', projects: 148, areaHa: 820, sla: 94, risk: 'Low', color: '#138808' },
@@ -99,7 +112,7 @@ export default function CommandPage() {
               {isHindi ? 'कुल परियोजनाएं' : 'Total Projects'}
             </div>
             <div className="text-2xl font-black text-[#0B2540]">
-              {metrics?.kpis?.totalProjects ? metrics.kpis.totalProjects.toLocaleString() : '1,284'}
+              {metrics?.kpis?.totalProjects ? metrics.kpis.totalProjects.toLocaleString() : fallbackTotalProjects.toLocaleString()}
             </div>
             <div className="text-[10.5px] text-[#138808] font-semibold flex items-center gap-1">
               <span>↑ +42</span>
@@ -112,7 +125,7 @@ export default function CommandPage() {
               {isHindi ? 'अधिसूचित भूमि' : 'Land Notified'}
             </div>
             <div className="text-2xl font-black text-[#0B2540]">
-              {metrics?.kpis?.totalAreaHa ? `${metrics.kpis.totalAreaHa.toLocaleString()} Ha` : '48,500 Ha'}
+              {metrics?.kpis?.totalAreaHa ? `${metrics.kpis.totalAreaHa.toLocaleString()} Ha` : `${fallbackTotalNotifiedHa.toLocaleString()} Ha`}
             </div>
             <div className="text-[10.5px] text-slate-500 font-medium">
               {isHindi ? '86% जीआईएस कैडस्ट्रल' : '86% geo-referenced'}
@@ -124,10 +137,10 @@ export default function CommandPage() {
               {isHindi ? 'कब्जा प्राप्त भूमि' : 'Land Possessed'}
             </div>
             <div className="text-2xl font-black text-[#138808]">
-              {metrics?.kpis?.totalAreaAcquiredHa ? `${metrics.kpis.totalAreaAcquiredHa.toLocaleString()} Ha` : '28,140 Ha'}
+              {metrics?.kpis?.totalAreaAcquiredHa ? `${metrics.kpis.totalAreaAcquiredHa.toLocaleString()} Ha` : `${fallbackTotalAcquiredHa.toLocaleString()} Ha`}
             </div>
             <div className="text-[10.5px] text-[#138808] font-semibold">
-              58.0% {isHindi ? 'अधिग्रहण पूर्ण' : 'Possession complete'}
+              {fallbackPossessionPct}% {isHindi ? 'अधिग्रहण पूर्ण' : 'Possession complete'}
             </div>
           </div>
 
@@ -136,7 +149,7 @@ export default function CommandPage() {
               {isHindi ? 'संवितरित प्रतिकर' : 'Compensation Paid'}
             </div>
             <div className="text-2xl font-black text-[#0B2540]">
-              {metrics?.kpis?.compensationPaidCr ? `₹${metrics.kpis.compensationPaidCr.toLocaleString()} Cr` : '₹14,850 Cr'}
+              {metrics?.kpis?.compensationPaidCr ? `₹${metrics.kpis.compensationPaidCr.toLocaleString()} Cr` : `₹${fallbackCompensationPaidCr.toLocaleString()} Cr`}
             </div>
             <div className="text-[10.5px] text-slate-500 font-medium">
               {isHindi ? 'प्रत्यक्ष PFMS बैंक DBT' : 'PFMS Direct DBT (Demo)'}
@@ -148,7 +161,7 @@ export default function CommandPage() {
               {isHindi ? 'वैधानिक SLA दर' : 'SLA Compliance'}
             </div>
             <div className="text-2xl font-black text-[#138808]">
-              {metrics?.kpis?.slaComplianceRate ? `${metrics.kpis.slaComplianceRate}%` : '91.4%'}
+              {metrics?.kpis?.slaComplianceRate ? `${metrics.kpis.slaComplianceRate}%` : `${fallbackSlaComplianceRate}%`}
             </div>
             <div className="text-[10.5px] text-slate-500 font-medium">
               {isHindi ? 'धारा 11 से 23 समयसीमा' : 'Sec 11 to 23 timelines'}
@@ -160,7 +173,7 @@ export default function CommandPage() {
               {isHindi ? 'प्राथमिकता अलर्ट' : 'Priority Alerts'}
             </div>
             <div className="text-2xl font-black text-[#B42318]">
-              {metrics?.kpis?.slaAlertsCount ?? 14}
+              {metrics?.kpis?.slaAlertsCount ?? fallbackAlertsCount}
             </div>
             <div className="text-[10.5px] text-[#B42318] font-semibold">
               {isHindi ? 'शीघ्र कार्रवाई अपेक्षित' : 'Action required'}
