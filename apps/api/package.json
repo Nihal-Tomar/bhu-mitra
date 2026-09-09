@@ -5,7 +5,7 @@
   "description": "BhuMitra NestJS API — National Land Acquisition Management Backend",
   "license": "UNLICENSED",
   "scripts": {
-    "build": "nest build",
+    "build": "prisma generate && nest build",
     "dev": "nest start --watch",
     "dev:embedded": "SET USE_EMBEDDED_PG=true && nest start --watch",
     "start": "node dist/apps/api/src/main",
