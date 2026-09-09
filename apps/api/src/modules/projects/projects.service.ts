@@ -149,6 +149,43 @@ export class ProjectsService {
 
     if (this.prisma && this.prisma.isDbConnected) {
       try {
+        const state = await this.prisma.state.findFirst({
+          where: { OR: [{ code: project.stateCode }, { name: project.state }] },
+        });
+        const district = await this.prisma.district.findFirst({
+          where: { name: { contains: project.district, mode: 'insensitive' } },
+        });
+        if (state && district) {
+          await this.prisma.project.create({
+            data: {
+              id: project.id,
+              projectCode: project.projectCode,
+              name: project.name,
+              description: project.description,
+              type: project.type,
+              ministry: project.ministry,
+              requiringBody: project.requiringBody,
+              stateId: state.id,
+              districtId: district.id,
+              stage: project.stage,
+              stageCode: project.stageCode,
+              status: project.status,
+              totalAreaProposedHa: project.totalAreaProposedHa,
+              totalAreaNotifiedHa: project.totalAreaNotifiedHa,
+              totalAreaAcquiredHa: project.totalAreaAcquiredHa || 0,
+              estimatedBudgetCr: project.estimatedBudgetCr,
+              compensationAssessedCr: project.compensationAssessedCr || 0,
+              compensationDisbursedCr: project.compensationDisbursedCr || 0,
+              affectedFamilies: project.affectedFamilies || 0,
+              slaDaysRemaining: project.slaDaysRemaining || 90,
+              riskLevel: project.riskLevel || 'low',
+              delayPredictedDays: project.delayPredictedDays || 0,
+              recommendedAction: project.recommendedAction,
+              targetCompletionDate: new Date(project.targetCompletionDate || Date.now() + 365 * 86400000),
+              startDate: new Date(project.startDate || Date.now()),
+            },
+          });
+        }
         await this.prisma.auditLog.create({
           data: {
             actorId,
@@ -161,7 +198,7 @@ export class ProjectsService {
           },
         });
       } catch (err) {
-        this.logger.warn(`Failed to log create to DB: ${(err as Error).message}`);
+        this.logger.warn(`Failed to persist project to DB: ${(err as Error).message}`);
       }
     }
 

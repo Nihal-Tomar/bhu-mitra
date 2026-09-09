@@ -281,9 +281,9 @@ export class DataStoreService {
         displacementType: 'ECONOMIC_DISPLACEMENT',
         packageType: 'RFCTLARR Second Schedule Standard Resettlement',
         entitlements: [
-          'Alternative Housing Subsistence Grant (₹3,000/month for 12 months)',
-          'One-time Resettlement Allowance (₹50,000)',
-          'Cattle Shed / Petty Shop Construction Grant (₹25,000)',
+          'Alternative Housing Subsistence Grant (INR 3,000/month for 12 months)',
+          'One-time Resettlement Allowance (INR 50,000)',
+          'Cattle Shed / Petty Shop Construction Grant (INR 25,000)',
         ],
         resettlementPlotNo: p.parcelNumber === '103-10' ? 'Plot #24, Vadodara Resettlement Colony' : undefined,
         resettlementColonyName: 'Padra New Settlement',
@@ -814,6 +814,19 @@ export class DataStoreService {
     return list;
   }
 
+  addAward(award: CompensationAwardDto): void {
+    this.awards.set(award.id, award);
+    if (award.parcelId) {
+      this.awards.set(award.parcelId, award);
+    }
+  }
+
+  addPayment(payment: CompensationPaymentDto): void {
+    const list = this.payments.get(payment.awardId) || [];
+    list.push(payment);
+    this.payments.set(payment.awardId, list);
+  }
+
   // ───────────────────────────────────────────────────────────────────────────
   // R&R & Grievances
   // ───────────────────────────────────────────────────────────────────────────
@@ -828,8 +841,8 @@ export class DataStoreService {
 
   createGrievance(data: Partial<GrievanceDto>): GrievanceDto {
     const newGrv: GrievanceDto = {
-      id: `grv-${Date.now()}`,
-      ticketNumber: `GRV-2026-${Math.floor(Math.random() * 900) + 100}`,
+      id: data.id || `grv-${Date.now()}`,
+      ticketNumber: data.ticketNumber || `GRV-2026-${Math.floor(Math.random() * 900) + 100}`,
       projectId: data.projectId || 'proj-0084',
       projectName: 'NH-48 Bharatmala Six-Laning Corridor',
       parcelId: data.parcelId,

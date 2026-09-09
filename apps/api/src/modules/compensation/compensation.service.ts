@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   ForbiddenException,
+  ConflictException,
   Optional,
   Logger,
 } from '@nestjs/common';
@@ -99,7 +100,9 @@ export class CompensationService {
       stats: {
         totalAssessed: valuations.reduce((acc, v) => acc + v.totalAssessedCompensation, 0),
         totalAwarded: awards.reduce((acc, a) => acc + a.totalAwardAmount, 0),
-        totalDisbursed: payments.filter((p) => p.status === 'COMPLETED').reduce((acc, p) => acc + p.amount, 0),
+        totalDisbursed: payments
+          .filter((p) => p.status === 'COMPLETED')
+          .reduce((acc, p) => acc + p.amount, 0),
       },
     };
   }
@@ -141,7 +144,7 @@ export class CompensationService {
     const createdAward: CompensationAwardDto = {
       id: awardData.id || `awd-${Date.now()}`,
       awardNumber,
-      parcelId: awardData.parcelId || 'parcel-001',
+      parcelId: awardData.parcelId || 'parcel-103-10',
       projectId: awardData.projectId || 'proj-0084',
       awardDate: awardData.awardDate || new Date().toISOString(),
       status: (awardData.status as any) || 'APPROVED',
@@ -153,6 +156,20 @@ export class CompensationService {
 
     if (this.prisma && this.prisma.isDbConnected) {
       try {
+        await this.prisma.compensationAward.create({
+          data: {
+            id: createdAward.id,
+            awardNumber: createdAward.awardNumber,
+            parcelId: createdAward.parcelId,
+            totalAwardAmount: createdAward.totalAwardAmount,
+            solatiumAmount: createdAward.solatiumAmount,
+            additionalInterest: createdAward.additionalInterest,
+            approvedBy: createdAward.approvedBy,
+            status: createdAward.status,
+            awardDate: new Date(createdAward.awardDate),
+          },
+        });
+
         await this.prisma.auditLog.create({
           data: {
             actorId,
@@ -161,13 +178,15 @@ export class CompensationService {
             action: 'CREATE',
             entityType: 'AWARD',
             entityId: createdAward.id,
-            remarks: `Issued statutory award ${awardNumber} for ₹${total.toLocaleString('en-IN')}`,
+            remarks: `Issued statutory award ${awardNumber} for INR ${total.toLocaleString('en-IN')}`,
           },
         });
       } catch (err) {
-        this.logger.warn(`Failed to audit award to DB: ${(err as Error).message}`);
+        this.logger.warn(`Failed to persist award to DB: ${(err as Error).message}`);
       }
     }
+
+    this.dataStore.addAward(createdAward);
 
     this.dataStore.addAuditLog(
       actorId,
@@ -175,7 +194,7 @@ export class CompensationService {
       'APPROVE',
       'AWARD',
       createdAward.id,
-      `Issued statutory award ${awardNumber} for ₹${total.toLocaleString('en-IN')}`,
+      `Issued statutory award ${awardNumber} for INR ${total.toLocaleString('en-IN')}`,
     );
 
     return createdAward;
@@ -204,8 +223,57 @@ export class CompensationService {
       );
     }
 
+    const utrNumber = paymentData.utrNumber || `SBIN${Date.now()}`;
+
+    // Duplicate Check: Disallow duplicate transaction reference (UTR)
+    const existingPayments = this.getPayments();
+    const isDuplicate = existingPayments.some(
+      (p) =>
+        p.transactionRef === utrNumber ||
+        (p.awardId === paymentData.awardId &&
+          p.amount === paymentData.amount &&
+          p.beneficiaryAccountMasked === paymentData.accountNumberMasked &&
+          Date.now() - new Date(p.paymentDate || 0).getTime() < 300000),
+    );
+    if (isDuplicate) {
+      throw new ConflictException(
+        `Duplicate payment rejected: Disbursement with UTR reference "${utrNumber}" has already been processed.`,
+      );
+    }
+
+    if (this.prisma && this.prisma.isDbConnected) {
+      const existingDbPayment = await this.prisma.compensationPayment.findFirst({
+        where: { transactionRef: utrNumber },
+      });
+      if (existingDbPayment) {
+        throw new ConflictException(
+          `Duplicate payment rejected: UTR "${utrNumber}" already exists in the database.`,
+        );
+      }
+    }
+
     const awards = this.getAwards();
-    const targetAward = awards.find((a) => a.id === paymentData.awardId);
+    let targetAward = awards.find((a) => a.id === paymentData.awardId);
+
+    if (!targetAward && this.prisma && this.prisma.isDbConnected) {
+      const dbAward = await this.prisma.compensationAward.findUnique({
+        where: { id: paymentData.awardId },
+      });
+      if (dbAward) {
+        targetAward = {
+          id: dbAward.id,
+          awardNumber: dbAward.awardNumber,
+          parcelId: dbAward.parcelId,
+          projectId: 'proj-0084',
+          awardDate: dbAward.awardDate.toISOString(),
+          totalAwardAmount: Number(dbAward.totalAwardAmount),
+          solatiumAmount: Number(dbAward.solatiumAmount),
+          additionalInterest: Number(dbAward.additionalInterest),
+          approvedBy: dbAward.approvedBy,
+          status: dbAward.status as any,
+        };
+      }
+    }
 
     const payments = this.getPayments();
     const existingDisbursed = payments
@@ -215,15 +283,14 @@ export class CompensationService {
 
     if (targetAward && newTotalDisbursed > targetAward.totalAwardAmount) {
       throw new BadRequestException(
-        `Financial invariant violation: Total disbursement (₹${newTotalDisbursed.toLocaleString('en-IN')}) exceeds sanctioned award limit (₹${targetAward.totalAwardAmount.toLocaleString('en-IN')}).`,
+        `Financial invariant violation: Total disbursement (INR ${newTotalDisbursed.toLocaleString('en-IN')}) exceeds sanctioned award limit (INR ${targetAward.totalAwardAmount.toLocaleString('en-IN')}).`,
       );
     }
 
-    const utrNumber = paymentData.utrNumber || `SBIN${Date.now()}`;
     const payment: CompensationPaymentDto = {
       id: `pay-${Date.now()}`,
       awardId: paymentData.awardId,
-      parcelId: targetAward?.parcelId || 'parcel-001',
+      parcelId: targetAward?.parcelId || 'parcel-103-10',
       beneficiaryName: paymentData.beneficiaryName,
       beneficiaryAccountMasked: paymentData.accountNumberMasked,
       bankName: 'State Bank of India',
@@ -265,7 +332,7 @@ export class CompensationService {
               action: 'DISBURSE',
               entityType: 'COMPENSATION',
               entityId: payment.id,
-              remarks: `Disbursed ₹${paymentData.amount} via DBT to ${paymentData.beneficiaryName} (UTR: ${utrNumber})`,
+              remarks: `Disbursed INR ${paymentData.amount} via DBT to ${paymentData.beneficiaryName} (UTR: ${utrNumber})`,
             },
           });
         });
@@ -274,13 +341,15 @@ export class CompensationService {
       }
     }
 
+    this.dataStore.addPayment(payment);
+
     this.dataStore.addAuditLog(
       actorId,
       actorName,
       'DISBURSE',
       'COMPENSATION',
       payment.id,
-      `Disbursed ₹${paymentData.amount} via DBT to ${paymentData.beneficiaryName} (UTR: ${utrNumber})`,
+      `Disbursed INR ${paymentData.amount} via DBT to ${paymentData.beneficiaryName} (UTR: ${utrNumber})`,
     );
 
     return payment;

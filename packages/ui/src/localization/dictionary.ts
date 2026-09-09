@@ -98,6 +98,70 @@ export const dictionary: Record<'en' | 'hi', Record<string, string>> = {
     'kpi.slaCompliance': 'Statutory SLA Compliance Rate',
     'kpi.pendingObjections': 'Pending Public Objections',
 
+    // Navigation
+    'nav.home': 'Home',
+    'nav.command': 'National Command',
+    'nav.infrastructure': 'Infrastructure',
+    'nav.projects': 'Projects',
+    'nav.gis': 'Acquisition GIS',
+    'nav.lifecycle': 'Lifecycle',
+    'nav.risk': 'Risk Intelligence',
+    'nav.more': 'More',
+    'nav.compensation': 'Compensation & DBT',
+    'nav.rr': 'Rehabilitation & Resettlement',
+    'nav.documents': 'Gazette & Documents',
+    'nav.citizen': 'Citizen Transparency',
+    'nav.officerLogin': 'Officer Login',
+    'nav.commandCenter': 'Command Center',
+
+    // Hero
+    'hero.slogan': 'From Proposal to Possession — One Command View for Every Acquisition.',
+    'hero.subtext': 'Real-time monitoring, GIS intelligence, statutory compliance, compensation, R&R and risk intelligence for infrastructure land acquisition.',
+    'hero.btnCommand': 'Open National Command',
+    'hero.btnGis': 'View Acquisition GIS',
+    'hero.btnVideo': 'Watch Platform Intro',
+    'hero.projectsMonitored': 'Projects Monitored',
+    'hero.landAcquisition': 'Land Under Acquisition',
+    'hero.compDisbursed': 'Compensation Disbursed',
+    'hero.slaAdherence': 'Statutory SLA Compliance',
+    'hero.modelDisclaimer': '* National Acquisition Model · Illustrative Telemetry Data',
+
+    // Home Command Preview
+    'home.commandTitle': "One Command View for India's Land Acquisition",
+    'home.commandSubtitle': 'Live monitoring and decision-support layer connecting Central Ministries, CALA Collectors, and Field Authorities.',
+    'home.openCommand': 'Open National Command →',
+    'home.activeAlerts': 'Active Priority Alerts',
+    'home.stateProgress': 'State-Wise Acquisition Progress',
+
+    // Home Sectors
+    'home.sectorTitle': 'Choose an Infrastructure Sector',
+    'home.sectorSubtitle': 'Drill down into corridor alignments, affected parcels, and statutory progress across national priority sectors.',
+    'sector.highways': 'Highways & Expressways',
+    'sector.highwaysDesc': 'Bharatmala corridors, national highway expansion, bypasses, and access-controlled expressways.',
+    'sector.railways': 'Railways & Freight Corridors',
+    'sector.railwaysDesc': 'Dedicated Freight Corridors (DFC), High Speed Rail (Bullet Train), and regional multi-tracking.',
+    'sector.renewable': 'Renewable Energy & Power',
+    'sector.renewableDesc': 'Ultra-mega solar parks, wind turbine zones, green energy corridors, and high-voltage transmission.',
+    'sector.urban': 'Urban Infrastructure & Metro',
+    'sector.urbanDesc': 'Metro rail networks, smart city peripheral ring roads, multi-modal transport hubs, and grade separators.',
+    'sector.industrial': 'Industrial & Strategic Corridors',
+    'sector.industrialDesc': 'National Industrial Corridors (NICDIT), Multi-Modal Logistics Parks (MMLP), ports, and defense nodes.',
+
+    // Home Lifecycle
+    'home.lifecycleTitle': 'The Acquisition Journey',
+    'home.lifecycleSubtitle': 'Every project moves through a traceable, tamper-evident 9-stage statutory lifecycle under RFCTLARR Act 2013.',
+    'home.trackProject': 'Track a Project →',
+
+    // Home Intelligence Strip
+    'home.intelTitle': 'National Acquisition Intelligence Capabilities',
+    'home.intelSubtitle': 'Comprehensive operational intelligence engineered for rapid decisions and legal defensibility.',
+    'home.gisTitle': 'Cadastral GIS Intelligence',
+    'home.gisDesc': 'Know exactly which parcels, khasras, and landowners fall within the alignment corridor buffer.',
+    'home.riskTitle': 'Risk & Delay Early Warning',
+    'home.riskDesc': 'AI-driven predictive models flag statutory SLA breaches, forest clearance bottlenecks, and objection surges.',
+    'home.compTitle': 'Compensation & R&R Traceability',
+    'home.compDesc': 'End-to-end auditability from circle rate valuation and 100% solatium to direct PFMS bank disbursement.',
+
     // Feedback
     'empty.title': 'No records found',
     'empty.desc': 'There are currently no land acquisition records matching your criteria.',
@@ -199,6 +263,70 @@ export const dictionary: Record<'en' | 'hi', Record<string, string>> = {
     'kpi.disbursedAmount': 'संवितरित कुल प्रतिकर राशि',
     'kpi.slaCompliance': 'वैधानिक SLA अनुपालन दर',
     'kpi.pendingObjections': 'लंबित जन आपत्तियां',
+
+    // Navigation
+    'nav.home': 'मुख्य पृष्ठ',
+    'nav.command': 'राष्ट्रीय कमान केंद्र',
+    'nav.infrastructure': 'बुनियादी ढांचा',
+    'nav.projects': 'परियोजनाएं',
+    'nav.gis': 'अधिग्रहण जीआईएस',
+    'nav.lifecycle': 'वैधानिक जीवनचक्र',
+    'nav.risk': 'जोखिम एवं विलंब आसूचना',
+    'nav.more': 'अधिक सेवाएं',
+    'nav.compensation': 'प्रतिकर एवं डीबीटी',
+    'nav.rr': 'पुनर्वासन एवं पुनर्व्यवस्थापन',
+    'nav.documents': 'राजपत्र एवं अभिलेख',
+    'nav.citizen': 'नागरिक पारदर्शिता',
+    'nav.officerLogin': 'अधिकारी लॉगिन',
+    'nav.commandCenter': 'कमांड सेंटर',
+
+    // Hero
+    'hero.slogan': 'प्रस्ताव से कब्जे तक — प्रत्येक भूमि अधिग्रहण हेतु एक एकीकृत कमान दृष्टिकोण।',
+    'hero.subtext': 'बुनियादी ढांचा भूमि अधिग्रहण हेतु वास्तविक समय निगरानी, जीआईएस आसूचना, वैधानिक अनुपालन, प्रतिकर, पुनर्वास और जोखिम पूर्वानुमान।',
+    'hero.btnCommand': 'राष्ट्रीय कमान केंद्र खोलें',
+    'hero.btnGis': 'अधिग्रहण जीआईएस देखें',
+    'hero.btnVideo': 'प्लेटफ़ॉर्म परिचय देखें',
+    'hero.projectsMonitored': 'निगरानीधीन परियोजनाएं',
+    'hero.landAcquisition': 'अधिग्रहण अधीन भूमि',
+    'hero.compDisbursed': 'संवितरित प्रतिकर राशि',
+    'hero.slaAdherence': 'वैधानिक SLA अनुपालन',
+    'hero.modelDisclaimer': '* राष्ट्रीय अधिग्रहण मॉडल · सांकेतिक टेलीमेट्री डेटा',
+
+    // Home Command Preview
+    'home.commandTitle': 'भारत के भूमि अधिग्रहण हेतु एकीकृत कमान दृष्टिकोण',
+    'home.commandSubtitle': 'केंद्रीय मंत्रालयों, सक्षम प्राधिकारियों (CALA) और क्षेत्रीय अधिकारियों को जोड़ने वाली वास्तविक समय निगरानी प्रणाली।',
+    'home.openCommand': 'राष्ट्रीय कमान केंद्र खोलें →',
+    'home.activeAlerts': 'सक्रिय प्राथमिकता अलर्ट',
+    'home.stateProgress': 'राज्यवार अधिग्रहण प्रगति',
+
+    // Home Sectors
+    'home.sectorTitle': 'बुनियादी ढांचा क्षेत्र चुनें',
+    'home.sectorSubtitle': 'राष्ट्रीय प्राथमिकता वाले क्षेत्रों में कॉरिडोर संरेखण, प्रभावित भूखंडों और वैधानिक प्रगति का विस्तृत विश्लेषण करें।',
+    'sector.highways': 'राजमार्ग एवं एक्सप्रेसवे',
+    'sector.highwaysDesc': 'भारतमाला कॉरिडोर, राष्ट्रीय राजमार्ग चौड़ीकरण, बाईपास एवं नियंत्रित-पहुंच एक्सप्रेसवे।',
+    'sector.railways': 'रेलवे एवं फ्रेट कॉरिडोर',
+    'sector.railwaysDesc': 'डेडिकेटेड फ्रेट कॉरिडोर (DFC), हाई स्पीड रेल (बुलेट ट्रेन), और क्षेत्रीय दोहरीकरण।',
+    'sector.renewable': 'नवीकरणीय ऊर्जा एवं पारेषण',
+    'sector.renewableDesc': 'अल्ट्रा-मेगा सौर पार्क, पवन ऊर्जा क्षेत्र, ग्रीन कॉरिडोर एवं उच्च-वोल्टेज पारेषण लाइनें।',
+    'sector.urban': 'शहरी अवसंरचना एवं मेट्रो',
+    'sector.urbanDesc': 'मेट्रो रेल नेटवर्क, स्मार्ट सिटी पेरिफेरल रिंग रोड और मल्टी-मॉडल परिवहन हब।',
+    'sector.industrial': 'औद्योगिक एवं रणनीतिक कॉरिडोर',
+    'sector.industrialDesc': 'राष्ट्रीय औद्योगिक कॉरिडोर (NICDIT), मल्टी-मॉडल लॉजिस्टिक्स पार्क, बंदरगाह कनेक्टिविटी और रक्षा नोड।',
+
+    // Home Lifecycle
+    'home.lifecycleTitle': 'अधिग्रहण यात्रा',
+    'home.lifecycleSubtitle': 'प्रत्येक परियोजना RFCTLARR अधिनियम 2013 के अंतर्गत 9-चरणीय पारदर्शी वैधानिक जीवनचक्र से गुजरती है।',
+    'home.trackProject': 'परियोजना ट्रैक करें →',
+
+    // Home Intelligence Strip
+    'home.intelTitle': 'राष्ट्रीय अधिग्रहण आसूचना क्षमताएं',
+    'home.intelSubtitle': 'शीघ्र निर्णय और कानूनी सुरक्षा के लिए तैयार व्यापक परिचालन आसूचना।',
+    'home.gisTitle': 'कैडस्ट्रल जीआईएस आसूचना',
+    'home.gisDesc': 'सटीक रूप से जानें कि कॉरिडोर बफर क्षेत्र में कौन से भूखंड, खसरा और भूस्वामी प्रभावित हैं।',
+    'home.riskTitle': 'जोखिम एवं विलंब पूर्व चेतावनी',
+    'home.riskDesc': 'एआई-संचालित मॉडल वैधानिक समयसीमा उल्लंघन, वन मंजूरी बाधाओं और आपत्तियों का पूर्वानुमान लगाते हैं।',
+    'home.compTitle': 'प्रतिकर एवं पुनर्वास पारदर्शकता',
+    'home.compDesc': 'सर्किल रेट मूल्यांकन, 100% तोषाण से लेकर प्रत्यक्ष बैंक अंतरण (PFMS DBT) तक पूर्ण अंकेक्षण।',
 
     // Feedback
     'empty.title': 'कोई अभिलेख नहीं मिला',

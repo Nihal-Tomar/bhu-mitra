@@ -32,33 +32,87 @@ describe('AuthService', () => {
     authService = module.get<AuthService>(AuthService);
   });
 
-  it('should authenticate official officer preset GJ-DM-VD-0042', async () => {
-    const result = await authService.login({
-      userId: 'GJ-DM-VD-0042',
-      password: 'Bhumitra@2026',
+  describe('login', () => {
+    it('should authenticate District Collector by officerId', async () => {
+      const result = await authService.login({
+        userId: 'GJ-DM-VD-0042',
+        password: 'Bhumitra@2026',
+      });
+
+      expect(result.accessToken).toBe('mock-jwt-token-sih-2026');
+      expect(result.user.officerId).toBe('GJ-DM-VD-0042');
+      expect(result.user.name).toContain('Rajesh Sharma');
+      expect(result.user.role).toBe('DISTRICT_COLLECTOR');
     });
 
-    expect(result.accessToken).toBe('mock-jwt-token-sih-2026');
-    expect(result.user.officerId).toBe('GJ-DM-VD-0042');
-    expect(result.user.name).toContain('Rajesh Sharma');
-    expect(result.user.role).toBe('DISTRICT_COLLECTOR');
-  });
-
-  it('should reject invalid password', async () => {
-    await expect(
-      authService.login({
-        userId: 'GJ-DM-VD-0042',
-        password: 'WrongPassword@123',
-      }),
-    ).rejects.toThrow(UnauthorizedException);
-  });
-
-  it('should reject non-existent officer ID', async () => {
-    await expect(
-      authService.login({
-        userId: 'NON-EXISTENT-999',
+    it('should authenticate by email', async () => {
+      const result = await authService.login({
+        email: 'rajesh.sharma@ias.gov.in',
         password: 'Bhumitra@2026',
-      }),
-    ).rejects.toThrow(UnauthorizedException);
+      });
+
+      expect(result.accessToken).toBe('mock-jwt-token-sih-2026');
+      expect(result.user.role).toBe('DISTRICT_COLLECTOR');
+    });
+
+    it('should authenticate CALA officer', async () => {
+      const result = await authService.login({
+        email: 'priya.meena@ras.gov.in',
+        password: 'Bhumitra@2026',
+      });
+
+      expect(result.user.role).toBe('CALA');
+    });
+
+    it('should authenticate Tehsildar', async () => {
+      const result = await authService.login({
+        email: 'amit.verma@uprevenue.gov.in',
+        password: 'Bhumitra@2026',
+      });
+
+      expect(result.user.role).toBe('TEHSILDAR');
+    });
+
+    it('should authenticate Super Admin', async () => {
+      const result = await authService.login({
+        email: 'admin@bhumitra.gov.in',
+        password: 'Bhumitra@2026',
+      });
+
+      expect(result.user.role).toBe('SUPER_ADMIN');
+    });
+
+    it('should reject invalid password', async () => {
+      await expect(
+        authService.login({
+          userId: 'GJ-DM-VD-0042',
+          password: 'WrongPassword@123',
+        }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should reject non-existent officer ID', async () => {
+      await expect(
+        authService.login({
+          userId: 'NON-EXISTENT-999',
+          password: 'Bhumitra@2026',
+        }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should reject non-existent email', async () => {
+      await expect(
+        authService.login({
+          email: 'nonexistent@gov.in',
+          password: 'Bhumitra@2026',
+        }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should reject missing credentials', async () => {
+      await expect(
+        authService.login({} as any),
+      ).rejects.toThrow();
+    });
   });
 });

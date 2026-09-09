@@ -8,20 +8,34 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   constructor() {
     super({
+      datasources: {
+        db: {
+          url:
+            process.env.DATABASE_URL ||
+            'postgresql://bhumitra:bhumitra_secure_dev@127.0.0.1:54329/bhumitra?schema=public',
+        },
+      },
       log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
     });
   }
 
   async onModuleInit() {
-    try {
-      await this.$connect();
-      this.isConnected = true;
-      this.logger.log('Connected to PostgreSQL + PostGIS database');
-    } catch (error) {
-      this.logger.warn(
-        `PostgreSQL server not connected (${(error as Error).message}). Operating with in-memory resilient fallback data layer for local evaluation.`,
-      );
-      this.isConnected = false;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        await this.$connect();
+        this.isConnected = true;
+        this.logger.log('Connected to PostgreSQL + PostGIS database');
+        return;
+      } catch (error) {
+        if (attempt === 3) {
+          this.logger.warn(
+            `PostgreSQL server not connected (${(error as Error).message}). Operating with in-memory resilient fallback data layer for local evaluation.`,
+          );
+          this.isConnected = false;
+        } else {
+          await new Promise((r) => setTimeout(r, 800));
+        }
+      }
     }
   }
 

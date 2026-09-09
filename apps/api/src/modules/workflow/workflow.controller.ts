@@ -4,6 +4,7 @@ import { WorkflowService } from './workflow.service';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { JurisdictionGuard } from '../../common/guards/jurisdiction.guard';
 import type { TransitionDto, UserSession } from '@bhumitra/types';
 
 @ApiTags('Action Centre & Statutory Workflow')
@@ -30,13 +31,14 @@ export class WorkflowController {
     };
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, JurisdictionGuard)
   @Post('transition')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Transition acquisition project to next statutory stage' })
-  transition(@Body() data: TransitionDto, @CurrentUser() user: UserSession) {
+  async transition(@Body() data: TransitionDto, @CurrentUser() user: UserSession) {
+    const res = await this.workflowService.transition(data, user.id, user.name, user.role);
     return {
-      data: this.workflowService.transition(data, user.id, user.name, user.role),
+      data: res,
     };
   }
 }

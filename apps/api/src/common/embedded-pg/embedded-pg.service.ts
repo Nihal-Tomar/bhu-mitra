@@ -16,20 +16,6 @@ const EmbeddedPostgres: any = (() => {
   }
 })();
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { Client: PgClient } = (() => {
-  try {
-    return require('pg');
-  } catch {
-    // embedded-postgres bundles pg, try from there
-    try {
-      return require('embedded-postgres/node_modules/pg');
-    } catch {
-      return { Client: null };
-    }
-  }
-})();
-
 /**
  * EmbeddedPgService — lifecycle manager for an embedded PostgreSQL server.
  *
@@ -110,24 +96,26 @@ export class EmbeddedPgService implements OnModuleInit, OnModuleDestroy {
 
   private async startEmbedded() {
     try {
+      const pgControl = path.join(this.dataDir, 'global', 'pg_control');
+      
       this.pg = new EmbeddedPostgres({
+        databaseDir: this.dataDir,
         port: EmbeddedPgService.PORT,
-        database: 'postgres',
         user: 'postgres',
+        password: 'password',
         persistent: true,
-        dataDirectory: this.dataDir,
       });
 
-      this.logger.log(`Initialising embedded PostgreSQL (data dir: ${this.dataDir})...`);
-      await this.pg.initialise();
+      if (!fs.existsSync(pgControl)) {
+        this.logger.log(`Initialising embedded PostgreSQL cluster in ${this.dataDir}...`);
+        await this.pg.initialise();
+      }
+
       await this.pg.start();
       this.isRunning = true;
       this.logger.log(`Embedded PostgreSQL started on port ${EmbeddedPgService.PORT}`);
 
-      // Allow local trust auth so we can bootstrap without a password
-      this.patchHbaConf();
-
-      // Reload pg_hba.conf and bootstrap role + database
+      // Bootstrap role and database
       await this.bootstrapDatabase();
 
       // Override DATABASE_URL so Prisma picks up the embedded server
@@ -145,37 +133,10 @@ export class EmbeddedPgService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private patchHbaConf() {
-    try {
-      const hbaPath = path.join(this.dataDir, 'pg_hba.conf');
-      if (!fs.existsSync(hbaPath)) return;
-      const content = fs.readFileSync(hbaPath, 'utf8');
-      const patched = content
-        .replace(/^(local\s+all\s+all\s+)\w+$/gm, '$1trust')
-        .replace(/^(host\s+all\s+all\s+127\.0\.0\.1\/32\s+)\w+$/gm, '$1trust')
-        .replace(/^(host\s+all\s+all\s+::1\/128\s+)\w+$/gm, '$1trust');
-      fs.writeFileSync(hbaPath, patched, 'utf8');
-      this.logger.debug('pg_hba.conf patched to trust local connections');
-    } catch (err) {
-      this.logger.debug(`pg_hba.conf patch skipped: ${(err as Error).message}`);
-    }
-  }
-
   private async bootstrapDatabase() {
-    if (!PgClient) {
-      this.logger.warn('pg module not available — cannot bootstrap bhumitra database');
-      return;
-    }
-
-    // Retry a few times while Postgres warms up
     for (let attempt = 1; attempt <= 5; attempt++) {
       try {
-        const admin = new PgClient({
-          host: '127.0.0.1',
-          port: EmbeddedPgService.PORT,
-          user: 'postgres',
-          database: 'postgres',
-        });
+        const admin = this.pg.getPgClient('postgres');
         await admin.connect();
 
         // Create bhumitra role if missing
@@ -189,9 +150,6 @@ export class EmbeddedPgService implements OnModuleInit, OnModuleDestroy {
           END
           $$;
         `);
-
-        // Reload pg_hba.conf so trust takes effect
-        await admin.query('SELECT pg_reload_conf()');
 
         // Create bhumitra database if missing
         const dbRow = await admin.query(

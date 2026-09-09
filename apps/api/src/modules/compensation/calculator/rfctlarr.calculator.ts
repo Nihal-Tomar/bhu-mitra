@@ -6,12 +6,16 @@
 
 export interface RfctlarrCalcParams {
   baseMarketRatePerHa: number;
-  areaHa: number;
+  areaHa?: number;
+  landAreaHa?: number;
   isRural: boolean;
   ruralMultiplier?: number; // Configurable between 1.0 and 2.0 based on distance from urban area
+  ruralMultiplierFactor?: number;
   assetsValue?: number; // Trees, buildings, standing crops under Sec. 29
+  assetsValueTreesStructures?: number;
   notificationDate?: Date | string; // Sec. 11 preliminary notification date
   awardDate?: Date | string; // Date of award or possession
+  monthsFromSec11ToAward?: number;
   solatiumPercentage?: number; // Statutory 100% under Sec. 30(1)
   statutoryInterestRate?: number; // Statutory 12% p.a. under Sec. 30(3)
 }
@@ -25,6 +29,7 @@ export interface RfctlarrCalcResult {
   additionalInterest: number;
   interestMonths: number;
   totalAwardAmount: number;
+  totalCompensation: number;
   components: {
     name: string;
     code: string;
@@ -45,20 +50,18 @@ export class RfctlarrCalculator {
    * Computes statutory compensation strictly per RFCTLARR 2013 First Schedule
    */
   static calculate(params: RfctlarrCalcParams): RfctlarrCalcResult {
-    const {
-      baseMarketRatePerHa,
-      areaHa,
-      isRural,
-      ruralMultiplier = 1.5, // Default rural multiplier per state gazette
-      assetsValue = 0,
-      notificationDate,
-      awardDate = new Date(),
-      solatiumPercentage = 100, // Sec. 30(1) mandates 100% solatium
-      statutoryInterestRate = 12, // Sec. 30(3) mandates 12% per annum
-    } = params;
+    const area = params.areaHa ?? params.landAreaHa ?? 0;
+    const baseMarketRatePerHa = params.baseMarketRatePerHa ?? 0;
+    const isRural = Boolean(params.isRural);
+    const ruralMultiplier = params.ruralMultiplier ?? params.ruralMultiplierFactor ?? 1.5;
+    const assetsValue = params.assetsValue ?? params.assetsValueTreesStructures ?? 0;
+    const notificationDate = params.notificationDate;
+    const awardDate = params.awardDate = new Date();
+    const solatiumPercentage = params.solatiumPercentage ?? 100; // Sec. 30(1) mandates 100% solatium
+    const statutoryInterestRate = params.statutoryInterestRate ?? 12; // Sec. 30(3) mandates 12% per annum
 
     // 1. Base Market Value under Section 26
-    const baseMarketValue = roundCurrency(baseMarketRatePerHa * areaHa);
+    const baseMarketValue = roundCurrency(baseMarketRatePerHa * area);
 
     // 2. Applicable Multiplier factor (1.0 for urban, 1.0 - 2.0 for rural)
     const multiplier = isRural ? Math.max(1.0, Math.min(2.0, ruralMultiplier)) : 1.0;
@@ -67,17 +70,20 @@ export class RfctlarrCalculator {
     // 3. Assets attached to land under Section 29
     const safeAssetsValue = roundCurrency(Math.max(0, assetsValue));
 
-    // 4. Base sum for solatium calculation (Sec. 30(1))
-    const totalLandAndAssets = roundCurrency(multipliedLandValue + safeAssetsValue);
+    // 4. 100% Solatium under Section 30(1) on multiplied land value
+    const solatium = roundCurrency((multipliedLandValue * solatiumPercentage) / 100);
 
-    // 5. 100% Solatium under Section 30(1)
-    const solatium = roundCurrency((totalLandAndAssets * solatiumPercentage) / 100);
-
-    // 6. Additional amount (interest) at 12% p.a. on market value under Section 30(3)
+    // 5. Additional amount (interest) at 12% p.a. on market value under Section 30(3)
     let additionalInterest = 0;
     let interestMonths = 0;
 
-    if (notificationDate) {
+    if (params.monthsFromSec11ToAward !== undefined) {
+      interestMonths = Math.max(0, Number(params.monthsFromSec11ToAward));
+      const diffYears = interestMonths / 12;
+      additionalInterest = roundCurrency(
+        (multipliedLandValue * (statutoryInterestRate / 100)) * diffYears,
+      );
+    } else if (notificationDate) {
       const nDate = new Date(notificationDate);
       const aDate = new Date(awardDate);
       const diffMs = Math.max(0, aDate.getTime() - nDate.getTime());
@@ -87,7 +93,7 @@ export class RfctlarrCalculator {
       additionalInterest = roundCurrency((baseMarketValue * (statutoryInterestRate / 100)) * diffYears);
     }
 
-    // 7. Total Statutory Award under Section 27 / 30
+    // 6. Total Statutory Award under Section 27 / 30
     const totalAwardAmount = roundCurrency(
       multipliedLandValue + safeAssetsValue + solatium + additionalInterest,
     );
@@ -101,6 +107,7 @@ export class RfctlarrCalculator {
       additionalInterest,
       interestMonths,
       totalAwardAmount,
+      totalCompensation: totalAwardAmount,
       components: [
         {
           name: 'Base Land Market Value',

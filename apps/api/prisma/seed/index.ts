@@ -141,10 +141,22 @@ async function main() {
 
   // 8. Seed Priority Actions
   for (const action of SEED_PRIORITY_ACTIONS) {
+    const actionFields = {
+      id: action.id,
+      projectId: action.projectId,
+      title: action.title,
+      description: action.description,
+      actionType: action.actionType,
+      priority: action.priority,
+      assignedRole: action.assignedRole,
+      dueDate: action.dueDate,
+      status: action.status,
+      escalationLevel: action.escalationLevel,
+    };
     await prisma.acquisitionAction.upsert({
       where: { id: action.id },
-      update: action,
-      create: action,
+      update: actionFields,
+      create: actionFields,
     });
   }
   console.log(`✅ Seeded ${SEED_PRIORITY_ACTIONS.length} Action Centre Priority Items`);

@@ -41,7 +41,7 @@ export class RehabilitationService {
             entitlements: (c.entitlements as string[]) || [
               'Constructed House / Housing Grant (Sec. 31)',
               'Subsistence Allowance for 1 Year',
-              'Transportation Allowance (₹50,000)',
+              'Transportation Allowance (INR 50,000)',
             ],
             resettlementPlotNo: c.resettlementPlotNo || undefined,
             resettlementColonyName: c.resettlementColonyName || 'BhuMitra Adarsh R&R Colony, Vadodara',
@@ -97,8 +97,8 @@ export class RehabilitationService {
       packageType: data.packageType || 'Second Schedule Statutory Package',
       entitlements: data.entitlements || [
         'Housing Allowance per Second Schedule',
-        'Subsistence Grant ₹36,000',
-        'Relocation Assistance ₹50,000',
+        'Subsistence Grant INR 36,000',
+        'Relocation Assistance INR 50,000',
       ],
       resettlementPlotNo: data.resettlementPlotNo,
       resettlementColonyName: data.resettlementColonyName,

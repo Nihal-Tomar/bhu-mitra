@@ -478,6 +478,8 @@ export const SAMPLE_PROJECTS: AcquisitionProject[] = [
   },
 ];
 
+export const ACQUISITION_PROJECTS = SAMPLE_PROJECTS;
+
 // ── 5. Stakeholder Workspaces ─────────────────────────────────────────────────
 
 export const STAKEHOLDER_ROLES: StakeholderWorkspace[] = [

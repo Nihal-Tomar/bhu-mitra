@@ -16,16 +16,39 @@ export interface LocaleProviderProps {
 export function LocaleProvider({ children, defaultLocale = 'en' }: LocaleProviderProps) {
   const [locale, setLocaleState] = useState<Locale>(defaultLocale);
 
-  // Sync with localStorage on client
+  // Sync with localStorage on client & listen to changes across tabs
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY) as Locale | null;
       if (saved && (saved === 'en' || saved === 'hi')) {
         setLocaleState(saved);
+        document.documentElement.lang = saved;
       }
     } catch {
       // Ignore localStorage read errors in restricted contexts
     }
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY && (e.newValue === 'en' || e.newValue === 'hi')) {
+        setLocaleState(e.newValue as Locale);
+        document.documentElement.lang = e.newValue;
+      }
+    };
+
+    const handleCustomChange = (e: Event) => {
+      const customEvent = e as CustomEvent<Locale>;
+      if (customEvent.detail && (customEvent.detail === 'en' || customEvent.detail === 'hi')) {
+        setLocaleState(customEvent.detail);
+        document.documentElement.lang = customEvent.detail;
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('bhumitra_locale_sync', handleCustomChange);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('bhumitra_locale_sync', handleCustomChange);
+    };
   }, []);
 
   const setLocale = (newLocale: Locale) => {
@@ -33,6 +56,8 @@ export function LocaleProvider({ children, defaultLocale = 'en' }: LocaleProvide
     try {
       localStorage.setItem(STORAGE_KEY, newLocale);
       document.documentElement.lang = newLocale;
+      // Dispatch in current window for any non-React or sibling listeners
+      window.dispatchEvent(new CustomEvent('bhumitra_locale_sync', { detail: newLocale }));
     } catch {
       // Ignore localStorage write errors
     }

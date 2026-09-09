@@ -140,8 +140,8 @@ export class GrievancesService {
 
         await this.prisma.auditLog.create({
           data: {
-            actorId: 'public-citizen',
-            actorName: newGrv.complainantName,
+            actorId: 'user-admin-national',
+            actorName: `${newGrv.complainantName} (Citizen Portal)`,
             actorRole: 'CITIZEN',
             action: 'CREATE',
             entityType: 'GRIEVANCE',

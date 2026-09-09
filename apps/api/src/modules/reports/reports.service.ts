@@ -94,6 +94,6 @@ export class ReportsService {
 
     // Default MIS summary CSV
     const generatedAt = (mis as any).generatedAt || new Date().toISOString();
-    return `Statutory Report Metric,Value\nTotal Projects,${mis.totalProjects}\nTotal Cadastral Parcels,${mis.totalParcels}\nTotal Compensation Disbursed (Cr),₹${mis.totalCompensationCr}\nTotal Grievances / Objections,${mis.totalGrievances}\nResolved Grievances,${mis.resolvedGrievances}\nAverage SLA Compliance Rate,${mis.avgSlaComplianceRate}%\nGenerated At,${generatedAt}\n`;
+    return `Statutory Report Metric,Value\nTotal Projects,${mis.totalProjects}\nTotal Cadastral Parcels,${mis.totalParcels}\nTotal Compensation Disbursed (Cr),INR ${mis.totalCompensationCr}\nTotal Grievances / Objections,${mis.totalGrievances}\nResolved Grievances,${mis.resolvedGrievances}\nAverage SLA Compliance Rate,${mis.avgSlaComplianceRate}%\nGenerated At,${generatedAt}\n`;
   }
 }

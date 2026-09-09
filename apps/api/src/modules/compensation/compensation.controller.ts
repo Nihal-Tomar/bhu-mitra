@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { CompensationService } from './compensation.service';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { JurisdictionGuard } from '../../common/guards/jurisdiction.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import type { CompensationAwardDto, UserSession } from '@bhumitra/types';
 import type { RfctlarrCalcParams } from './calculator/rfctlarr.calculator';
@@ -27,6 +28,7 @@ export class CompensationController {
 
   @Public()
   @Post('calculate')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Calculate statutory compensation per RFCTLARR 2013 First Schedule' })
   @ApiResponse({ status: 200, description: 'Calculated breakdown with solatium and interest' })
   calculate(@Body() body: RfctlarrCalcParams) {
@@ -54,7 +56,7 @@ export class CompensationController {
     };
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, JurisdictionGuard)
   @Roles('DISTRICT_COLLECTOR', 'CALA', 'SUPER_ADMIN')
   @Post('awards')
   @ApiBearerAuth('JWT-auth')
@@ -78,7 +80,7 @@ export class CompensationController {
     };
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, JurisdictionGuard)
   @Roles('DISTRICT_COLLECTOR', 'CALA', 'COMPENSATION_OFFICER', 'SUPER_ADMIN')
   @Post('disbursements')
   @ApiBearerAuth('JWT-auth')

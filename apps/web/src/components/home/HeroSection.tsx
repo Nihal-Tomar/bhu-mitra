@@ -1,11 +1,12 @@
-'use client';
-
 import React, { useState } from 'react';
-import { HomeHeader } from './HomeHeader';
+import Link from 'next/link';
+import { useLocale } from '@bhumitra/ui';
+import { GovernmentHeader } from '../common/GovernmentHeader';
 import { StoryVideoModal } from './StoryVideoModal';
 import { HERO_STATS, GOVERNANCE_PILLARS } from '../../data/homepageData';
 
 export const HeroSection: React.FC = () => {
+  const { isHindi } = useLocale();
   const [videoOpen, setVideoOpen] = useState(false);
   const [tabletHover, setTabletHover] = useState(false);
   const [stoneHover, setStoneHover] = useState(false);
@@ -26,7 +27,7 @@ export const HeroSection: React.FC = () => {
         aria-label="Bhu-Mitra National Land Acquisition & Management Platform Hero with Indian rural landscape, infrastructure corridor, and farmer holding GIS tablet"
       />
 
-      {/* Refined Directional Lighting Overlay: Soft text contrast on left, fully photographic and open on right */}
+      {/* Refined Directional Lighting Overlay */}
       <div
         className="absolute inset-0 z-0 pointer-events-none"
         style={{
@@ -36,7 +37,7 @@ export const HeroSection: React.FC = () => {
       />
 
       {/* Top: Government of India Institutional Header */}
-      <HomeHeader />
+      <GovernmentHeader />
 
       {/* Hero Canvas Area: Structured into Left Zone, Center Protected Farmer Zone, Right Safe Zone */}
       <div className="relative z-10 max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-5 pb-20 sm:pb-24 flex-1 flex flex-col justify-between">
@@ -52,23 +53,23 @@ export const HeroSection: React.FC = () => {
             
             {/* National Acquisition Lifecycle Eyebrow */}
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-bold text-slate-800 uppercase tracking-[0.16em] sm:tracking-[0.2em]">
-              <span>PROPOSAL</span>
+              <span>{isHindi ? 'प्रस्ताव' : 'PROPOSAL'}</span>
               <span className="text-slate-400">|</span>
-              <span>SCRUTINY</span>
+              <span>{isHindi ? 'संवीक्षा' : 'SCRUTINY'}</span>
               <span className="text-slate-400">|</span>
-              <span>NOTIFICATION</span>
+              <span>{isHindi ? 'अधिसूचना' : 'NOTIFICATION'}</span>
               <span className="text-slate-400">|</span>
-              <span>AWARD</span>
+              <span>{isHindi ? 'अधिनिर्णय' : 'AWARD'}</span>
               <span className="text-slate-400">|</span>
-              <span className="text-[#138808]">POSSESSION</span>
+              <span className="text-[#138808]">{isHindi ? 'कब्जा' : 'POSSESSION'}</span>
             </div>
 
             {/* Bhu-Mitra Brand Wordmark with Organic Leaf Motif */}
             <div className="relative inline-block select-none">
               <h1 className="text-4xl sm:text-5xl lg:text-[54px] xl:text-[62px] font-black tracking-[-0.025em] leading-none flex items-baseline drop-shadow-2xs">
-                <span className="text-[#0B2540]">Bhu-</span>
+                <span className="text-[#0B2540]">{isHindi ? 'भूमि-' : 'Bhu-'}</span>
                 <span className="text-[#0C6237] relative">
-                  Mitra
+                  {isHindi ? 'मित्र' : 'Mitra'}
                   {/* Organic leaf emblem positioned gracefully on the brand */}
                   <svg
                     className="absolute -top-3.5 -right-2 sm:-top-4 sm:-right-3 w-7 h-7 sm:w-9 sm:h-9 text-[#138808] drop-shadow-2xs transform rotate-12"
@@ -91,43 +92,51 @@ export const HeroSection: React.FC = () => {
             <div className="space-y-1.5 sm:space-y-2">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-900/10 border border-emerald-800/25 text-[#0C5A37] text-[10.5px] sm:text-xs font-bold uppercase tracking-wider">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                National Land Acquisition &amp; Management Platform
+                {isHindi ? 'राष्ट्रीय भूमि अधिग्रहण आसूचना एवं प्रबंधन मंच' : 'National Land Acquisition Intelligence Platform'}
               </div>
               <h2 className="text-xl sm:text-2xl font-bold text-[#0B2540] tracking-tight leading-snug">
-                Real-Time Monitoring, GIS Intelligence &amp; Decision Support
+                {isHindi
+                  ? 'प्रस्ताव से कब्जे तक — प्रत्येक अधिग्रहण हेतु एक कमान दृष्टिकोण'
+                  : 'From Proposal to Possession — One Command View for Every Acquisition.'}
               </h2>
-              <p className="text-base sm:text-[17px] lg:text-[18px] text-slate-800 leading-relaxed font-normal max-w-xl">
-                End-to-end statutory lifecycle monitoring from online proposal to legal possession under RFCTLARR Act 2013 with fair compensation and R&amp;R transparency.
+              <p className="text-sm sm:text-base text-slate-800 leading-relaxed font-normal max-w-xl">
+                {isHindi
+                  ? 'बुनियादी ढांचा भूमि अधिग्रहण हेतु वास्तविक समय निगरानी, जीआईएस आसूचना, वैधानिक अनुपालन, प्रतिकर, पुनर्वास और जोखिम पूर्वानुमान।'
+                  : 'Real-time monitoring, GIS intelligence, statutory compliance, compensation, R&R and risk intelligence for infrastructure land acquisition under RFCTLARR Act 2013.'}
               </p>
             </div>
 
-            {/* Primary & Secondary Action CTAs */}
+            {/* Primary & Secondary Action CTAs (open in dedicated new tabs) */}
             <div className="flex flex-wrap items-center gap-2.5 sm:gap-3.5 pt-1">
               {/* Primary Green Pill Button */}
-              <a
-                href="#dashboard"
-                className="inline-flex items-center gap-2 bg-[#0C5A37] hover:bg-[#084228] text-white text-xs sm:text-sm font-semibold px-5 sm:px-6 py-2.5 sm:py-3 rounded-full shadow-xs hover:shadow-md transition-all hover:translate-x-0.5 group focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              <Link
+                href="/command"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-[#0C5A37] hover:bg-[#084228] text-white text-xs sm:text-sm font-semibold px-5 sm:px-6 py-2.5 sm:py-3 rounded-full shadow-xs hover:shadow-md transition-all hover:translate-x-0.5 group focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
               >
-                <span>Explore National Dashboard</span>
+                <span>{isHindi ? 'राष्ट्रीय कमान केंद्र खोलें' : 'Open National Command'}</span>
                 <span className="text-base leading-none group-hover:translate-x-1 transition-transform">→</span>
-              </a>
+              </Link>
 
               {/* Secondary GIS Map Button */}
-              <a
-                href="#gis-map"
-                className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-900 hover:text-[#0C5A37] py-2 px-3 sm:px-3.5 rounded-full border border-slate-300/80 bg-white/75 hover:bg-white transition-colors group focus:outline-none focus:ring-2 focus:ring-[#138808]"
+              <Link
+                href="/gis"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-900 hover:text-[#0C5A37] py-2 px-3 sm:px-3.5 rounded-full border border-slate-300/80 bg-white/75 hover:bg-white transition-colors group focus:outline-none focus:ring-2 focus:ring-[#138808] cursor-pointer"
               >
                 <svg className="w-4 h-4 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                 </svg>
-                <span>View Acquisition Map</span>
-              </a>
+                <span>{isHindi ? 'अधिग्रहण जीआईएस देखें' : 'View Acquisition GIS'}</span>
+              </Link>
 
               {/* Documentary Video Modal Button */}
               <button
                 type="button"
                 onClick={() => setVideoOpen(true)}
-                className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-800 hover:text-slate-950 py-1.5 px-2.5 rounded-full hover:bg-white/70 transition-colors group focus:outline-none"
+                className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-800 hover:text-slate-950 py-1.5 px-2.5 rounded-full hover:bg-white/70 transition-colors group focus:outline-none cursor-pointer"
                 aria-label="Watch Bhu-Mitra platform video (2 minutes)"
               >
                 <span className="w-6 h-6 rounded-full border border-slate-600 group-hover:border-[#138808] flex items-center justify-center text-slate-800 group-hover:text-[#138808] transition-colors">
@@ -135,7 +144,7 @@ export const HeroSection: React.FC = () => {
                     <path d="M8 5v14l11-7z" />
                   </svg>
                 </span>
-                <span className="text-[11.5px] font-medium text-slate-700">Watch Intro</span>
+                <span className="text-[11.5px] font-medium text-slate-700">{isHindi ? 'प्लेटफ़ॉर्म वीडियो' : 'Watch Intro'}</span>
               </button>
             </div>
 
@@ -206,18 +215,16 @@ export const HeroSection: React.FC = () => {
             <div
               className="pointer-events-auto relative cursor-pointer group mt-auto mb-4"
               onClick={() => {
-                const mapSec = document.getElementById('gis-map');
-                if (mapSec) mapSec.scrollIntoView({ behavior: 'smooth' });
+                window.open('/gis', '_blank', 'noopener,noreferrer');
               }}
               onMouseEnter={() => setTabletHover(true)}
               onMouseLeave={() => setTabletHover(false)}
               role="button"
               tabIndex={0}
-              aria-label="Click to inspect Cadastral Parcel #103/10 in GIS Section"
+              aria-label="Click to inspect Cadastral Parcel #103/10 in Acquisition GIS"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
-                  const mapSec = document.getElementById('gis-map');
-                  if (mapSec) mapSec.scrollIntoView({ behavior: 'smooth' });
+                  window.open('/gis', '_blank', 'noopener,noreferrer');
                 }
               }}
             >
