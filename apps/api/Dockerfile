@@ -13,6 +13,7 @@ COPY apps/api/ ./apps/api/
 RUN pnpm install --frozen-lockfile=false
 RUN pnpm --filter @bhumitra/api run db:generate
 RUN pnpm --filter @bhumitra/api... build
+RUN node apps/api/scripts/ensure-entrypoint.js || true
 
 FROM node:22-alpine AS runner
 
