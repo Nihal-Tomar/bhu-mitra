@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface AcquisitionParcelDetail {
   id: string;
@@ -110,6 +110,36 @@ export const GISSection: React.FC = () => {
   });
   const [selectedParcel, setSelectedParcel] = useState<AcquisitionParcelDetail>(DEMO_PARCELS['103-10']);
   const [zoomLevel, setZoomLevel] = useState(16);
+
+  // Sync with AI Assistant GIS actions & URL search params
+  useEffect(() => {
+    // 1. Check URL params on mount
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const parcelParam = params.get('parcel');
+      if (parcelParam && DEMO_PARCELS[parcelParam]) {
+        setSelectedParcel(DEMO_PARCELS[parcelParam]);
+        setZoomLevel(18);
+      }
+    }
+
+    // 2. Listen for custom AI Assistant events
+    const handleAiGisSelect = (e: Event) => {
+      const customEvent = e as CustomEvent<{ parcelId?: string; projectId?: string }>;
+      const pId = customEvent.detail?.parcelId;
+      if (pId && DEMO_PARCELS[pId]) {
+        setSelectedParcel(DEMO_PARCELS[pId]);
+        setZoomLevel(18);
+        const mapElem = document.getElementById('gis-map');
+        if (mapElem) {
+          mapElem.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+    };
+
+    window.addEventListener('bhumitra:gis:select-parcel', handleAiGisSelect);
+    return () => window.removeEventListener('bhumitra:gis:select-parcel', handleAiGisSelect);
+  }, []);
 
   const toggleLayer = (layerKey: keyof typeof activeLayers) => {
     setActiveLayers((prev) => ({ ...prev, [layerKey]: !prev[layerKey] }));

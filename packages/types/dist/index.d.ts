@@ -524,4 +524,130 @@ export interface DecisionSupportInsightDto {
     affectedParcelsCount?: number;
     statutoryDeadline?: string;
 }
+export type SupportedLanguage = 'en' | 'hi' | 'hinglish' | 'mr' | 'bn' | 'ta' | 'te' | 'gu' | 'kn' | 'ml' | 'pa';
+export type AiChatRole = 'user' | 'assistant' | 'system';
+export type AiActionType = 'NAVIGATE' | 'GIS_FILTER' | 'OPEN_PROJECT' | 'OPEN_PARCEL' | 'OPEN_DOCUMENT' | 'OPEN_COMPENSATION' | 'GENERATE_REPORT';
+export interface AiAction {
+    label: string;
+    actionType: AiActionType;
+    payload: Record<string, unknown>;
+}
+export interface AiMetric {
+    label: string;
+    value: string | number;
+    change?: string;
+    variant?: 'default' | 'success' | 'warning' | 'danger' | 'info';
+}
+export interface AiRiskAssessment {
+    score: number;
+    level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    factors: string[];
+}
+export interface AiBottleneck {
+    stage: string;
+    issue: string;
+    affectedCount: number;
+    severity: 'critical' | 'high' | 'medium';
+}
+export interface AiConversationContext {
+    selectedProjectId?: string;
+    selectedProjectCode?: string;
+    selectedProjectName?: string;
+    lastProjects?: Array<{
+        id: string;
+        projectCode: string;
+        name: string;
+        state: string;
+        riskLevel: string;
+        status: string;
+    }>;
+    activeFilters?: {
+        state?: string;
+        sector?: string;
+        status?: string;
+        stage?: string;
+    };
+    contextLabel?: string;
+}
+export type VoiceInteractionState = 'IDLE' | 'LISTENING' | 'PROCESSING' | 'DETECTING_LANG' | 'SEARCHING' | 'PREPARING' | 'SPEAKING' | 'ERROR';
+export interface AiStructuredResponse {
+    title: string;
+    summary: string;
+    language: SupportedLanguage;
+    detectedIntent?: string;
+    spokenSummary?: string;
+    inputSource?: 'text' | 'voice';
+    speakResponse?: boolean;
+    projects?: ProjectDto[];
+    metrics?: AiMetric[];
+    badges?: Array<{
+        text: string;
+        color: string;
+    }>;
+    risk?: AiRiskAssessment;
+    bottlenecks?: AiBottleneck[];
+    priorities?: Array<{
+        label: string;
+        count: number;
+        detail: string;
+        severity: 'critical' | 'high' | 'medium';
+    }>;
+    table?: {
+        columns: string[];
+        rows: Array<Array<string | number>>;
+    };
+    facts?: string[];
+    analysis?: string[];
+    recommendations?: string[];
+    actions?: AiAction[];
+    sources?: string[];
+    disclaimer?: string;
+    conversationContext?: AiConversationContext;
+}
+export interface AiMessage {
+    id: string;
+    role: AiChatRole;
+    content: string;
+    structuredResponse?: AiStructuredResponse;
+    timestamp: string;
+}
+export interface AiContext {
+    currentPage: string;
+    currentModule: string;
+    projectId?: string;
+    projectCode?: string;
+    parcelId?: string;
+    surveyNo?: string;
+    selectedDistrict?: string;
+    selectedVillage?: string;
+    userRole?: string;
+    jurisdiction?: string;
+    language?: SupportedLanguage;
+    conversationContext?: AiConversationContext;
+}
+export interface AiQueryDto {
+    message: string;
+    context?: Partial<AiContext>;
+    conversationId?: string;
+    language?: SupportedLanguage;
+    history?: Array<{
+        role: AiChatRole;
+        content: string;
+    }>;
+    attachment?: {
+        name: string;
+        type: string;
+        content: string;
+    };
+    conversationContext?: AiConversationContext;
+    inputSource?: 'text' | 'voice';
+}
+export interface AiConversationSession {
+    id: string;
+    title: string;
+    createdAt: string;
+    updatedAt: string;
+    messages: AiMessage[];
+    context?: AiConversationContext;
+}
 //# sourceMappingURL=index.d.ts.map

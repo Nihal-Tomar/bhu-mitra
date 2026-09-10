@@ -18,6 +18,7 @@ import { DocumentsModule } from './modules/documents/documents.module';
 import { FieldModule } from './modules/field/field.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { AiModule } from './modules/ai/ai.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { ReportsModule } from './modules/reports/reports.module';
     FieldModule,
     AuditModule,
     ReportsModule,
+    AiModule,
   ],
   controllers: [],
   providers: [],
