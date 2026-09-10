@@ -46,6 +46,9 @@ export const viewport: Viewport = {
   themeColor: '#0B1F33',
 };
 
+import { Suspense } from 'react';
+import { BhuMitraAiAssistant } from '../components/ai/BhuMitraAiAssistant';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -64,6 +67,9 @@ export default function RootLayout({
         </a>
         <LocaleProvider defaultLocale="en">
           {children}
+          <Suspense fallback={null}>
+            <BhuMitraAiAssistant />
+          </Suspense>
         </LocaleProvider>
       </body>
     </html>
