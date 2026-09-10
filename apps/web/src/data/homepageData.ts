@@ -7,6 +7,7 @@
  */
 
 import { EXPANDED_SECTOR_PROJECTS } from './sectorProjectsData';
+export * from './projectLifecycleData';
 
 export const DEMO_DATA_DISCLAIMER = 'National Land Acquisition Management System — Model Telemetry Dataset' as const;
 
@@ -81,6 +82,8 @@ export interface AcquisitionProject {
   expectedCompletionDate?: string;
   estimatedCostCr?: number;
   dataSource?: string;
+  lastUpdated?: string;
+  statutorySection?: string;
 }
 
 export interface StakeholderWorkspace {

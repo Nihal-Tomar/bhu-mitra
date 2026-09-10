@@ -40,13 +40,11 @@ export const AcquisitionJourneySection: React.FC = () => {
 
           <div className="shrink-0">
             <Link
-              href="/lifecycle"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/lifecycle?project=DOLR-2026-0084"
               className="inline-flex items-center gap-2 bg-[#0B2540] hover:bg-[#071726] text-white text-xs sm:text-sm font-bold px-5 py-2.5 sm:py-3 rounded-xl shadow-xs hover:shadow-md transition-all group"
             >
               <span>{t('home.trackProject', 'Track a Project →')}</span>
-              <span className="text-xs text-slate-300">↗</span>
+              <span className="text-xs text-slate-300">→</span>
             </Link>
           </div>
         </div>
@@ -82,18 +80,16 @@ export const AcquisitionJourneySection: React.FC = () => {
 
           <div className="mt-5 pt-4 border-t border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
             <div className="text-slate-600 font-medium">
-              <span className="font-bold text-[#0C5A37]">{isHindi ? 'कानूनी बाध्यता:' : 'Statutory Mandate:'}</span>{' '}
+              <span className="font-bold text-[#0C5A37]">{isHindi ? 'वैधानिक एसएलए बाध्यता:' : 'Statutory SLA Mandate:'}</span>{' '}
               {isHindi
-                ? 'धारा 11 राजपत्र से धारा 23 अधिनिर्णय तक 12 माह की वैधानिक समय-सीमा अनिवार्य है।'
-                : '12-month strict statutory timeline from Section 11 notice to Section 23 Award declaration.'}
+                ? 'धारा 11(1) से धारा 19(1) घोषणा हेतु 12 माह (धारा 19(7)) एवं धारा 19 से धारा 23/25 अधिनिर्णय हेतु 12 माह (धारा 25) की वैधानिक सीमा निर्धारित है। धारा 38 कब्जा पूर्ण प्रतिकर उपरांत ही अनुमत है।'
+                : 'Section 19 declaration must be published within 12 months of Section 11(1) notice (Sec. 19(7)); Section 23 award within 12 months of Section 19 publication (Sec. 25). Encumbrance-free possession under Section 38 follows full compensation & R&R disbursal.'}
             </div>
             <Link
-              href="/lifecycle"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/lifecycle?project=DOLR-2026-0084"
               className="text-[#0C5A37] font-bold hover:underline shrink-0"
             >
-              {isHindi ? 'सम्पूर्ण 9-चरणीय विवरण देखें ↗' : 'Inspect Detailed 9-Stage Dossier ↗'}
+              {isHindi ? 'सम्पूर्ण 9-चरणीय विवरण देखें →' : 'Inspect Detailed 9-Stage Dossier →'}
             </Link>
           </div>
         </div>

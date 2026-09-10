@@ -48,6 +48,7 @@ export const viewport: Viewport = {
 
 import { Suspense } from 'react';
 import { BhuMitraAiAssistant } from '../components/ai/BhuMitraAiAssistant';
+import { AuthProvider } from '../lib/authContext';
 
 export default function RootLayout({
   children,
@@ -66,10 +67,12 @@ export default function RootLayout({
           Skip to main content
         </a>
         <LocaleProvider defaultLocale="en">
-          {children}
-          <Suspense fallback={null}>
-            <BhuMitraAiAssistant />
-          </Suspense>
+          <AuthProvider>
+            {children}
+            <Suspense fallback={null}>
+              <BhuMitraAiAssistant />
+            </Suspense>
+          </AuthProvider>
         </LocaleProvider>
       </body>
     </html>
