@@ -7,6 +7,7 @@ import type {
   AiConversationContext,
 } from '@bhumitra/types';
 import { SAMPLE_PROJECTS, type AcquisitionProject } from '../data/homepageData';
+import { getProjectLifecycle, type ProjectLifecycleProfile } from '../data/projectLifecycleData';
 
 // Map AcquisitionProject from homepageData to ProjectDto format
 function toProjectDto(ap: AcquisitionProject): ProjectDto {
@@ -125,9 +126,72 @@ export function executeOfflineQuery(dto: AiQueryDto): AiMessage {
   ) {
     const candidateId = ctx.selectedProjectId || ctx.lastProjects?.[0]?.id || 'DOLR-2026-0071';
     const proj = LOCAL_PROJECTS.find((p) => p.id === candidateId || p.projectCode === candidateId) || LOCAL_PROJECTS[0];
+    updatedContext.selectedProjectId = proj.id;
+    updatedContext.selectedProjectName = proj.name;
     structured = buildSingleProjectResponse(proj, isHindi);
   }
-  // 4. Sector Query: Railway / Rail
+  // 4. Statutory Stage Query: "Which stage is NH-48 currently in?" / "stage of project" / "किस चरण में है"
+  else if (
+    (q.includes('stage') || q.includes('चरण') || q.includes('stithi') || q.includes('phase')) &&
+    (q.includes('nh-48') || q.includes('nh48') || q.includes('bharatmala') || q.includes('dfc') || q.includes('pune') || q.includes('which stage') || q.includes('current stage') || q.includes('in which') || q.includes('kisme'))
+  ) {
+    let projId = 'DOLR-2026-0084';
+    if (q.includes('dfc')) projId = 'DOLR-2026-0071';
+    else if (q.includes('pune') || q.includes('nashik')) projId = 'DOLR-2026-0066';
+    const profile = getProjectLifecycle(projId);
+    updatedContext.selectedProjectId = profile.projectId;
+    updatedContext.selectedProjectName = profile.projectName;
+    structured = buildStageIntelligenceResponse(profile, isHindi);
+  }
+  // 5. Pending Possession Query: "How many parcels are pending possession?" / "pending possession" / "कब्ज़ा"
+  else if (
+    q.includes('pending possession') ||
+    q.includes('parcels pending') ||
+    (q.includes('possession') && (q.includes('pending') || q.includes('how many') || q.includes('kitne') || q.includes('parcels'))) ||
+    q.includes('कब्ज़ा लंबित') ||
+    q.includes('कब्जा बाकी') ||
+    q.includes('लंबित कब्जा')
+  ) {
+    const profile = getProjectLifecycle('DOLR-2026-0084');
+    structured = buildPendingPossessionResponse(profile, isHindi);
+  }
+  // 6. Pending Compensation Query: "How much compensation is pending?" / "pending compensation" / "लंबित मुआवजा"
+  else if (
+    q.includes('pending compensation') ||
+    q.includes('compensation pending') ||
+    (q.includes('compensation') && (q.includes('pending') || q.includes('how many') || q.includes('how much') || q.includes('kitna') || q.includes('remaining'))) ||
+    q.includes('लंबित मुआवजा') ||
+    q.includes('बकाया मुआवजा') ||
+    q.includes('मुआवजा बाकी')
+  ) {
+    const profile = getProjectLifecycle('DOLR-2026-0084');
+    structured = buildPendingCompensationResponse(profile, isHindi);
+  }
+  // 7. High-Risk Parcels Query: "Show me high-risk parcels" / "high risk parcels" / "जोखिम वाले पार्सल"
+  else if (
+    q.includes('high risk') ||
+    q.includes('high-risk') ||
+    q.includes('risk parcel') ||
+    q.includes('risk parcels') ||
+    q.includes('जोखिम वाले पार्सल') ||
+    q.includes('जोखिम पार्सल')
+  ) {
+    const profile = getProjectLifecycle('DOLR-2026-0084');
+    structured = buildHighRiskParcelsResponse(profile, isHindi);
+  }
+  // 8. Families Awaiting R&R: "How many families are awaiting R&R?" / "awaiting r&r" / "पुनर्वास"
+  else if (
+    q.includes('awaiting r&r') ||
+    q.includes('awaiting rr') ||
+    q.includes('families awaiting') ||
+    (q.includes('r&r') && (q.includes('families') || q.includes('pending') || q.includes('status') || q.includes('how many'))) ||
+    q.includes('पुनर्वास') ||
+    q.includes('विस्थापित परिवार')
+  ) {
+    const profile = getProjectLifecycle('DOLR-2026-0084');
+    structured = buildAwaitingRRResponse(profile, isHindi);
+  }
+  // 9. Sector Query: Railway / Rail
   else if (
     q.includes('rail') ||
     q.includes('railway') ||
@@ -140,7 +204,7 @@ export function executeOfflineQuery(dto: AiQueryDto): AiMessage {
     updatedContext.contextLabel = `Railway Corridors (${railProjects.length})`;
     structured = buildSectorResponse('Rail', railProjects, isHindi);
   }
-  // 5. Sector Query: Highway
+  // 10. Sector Query: Highway
   else if (
     q.includes('highway') ||
     q.includes('highways') ||
@@ -154,7 +218,7 @@ export function executeOfflineQuery(dto: AiQueryDto): AiMessage {
     updatedContext.contextLabel = `Highway Corridors (${hwProjects.length})`;
     structured = buildSectorResponse('Highway', hwProjects, isHindi);
   }
-  // 6. Sector Query: Metro / Urban
+  // 11. Sector Query: Metro / Urban
   else if (q.includes('metro') || q.includes('मेट्रो')) {
     const metroProjects = LOCAL_PROJECTS.filter((p) => p.type === 'Metro');
     updatedContext.lastProjects = metroProjects.map(mapProjectContext);
@@ -162,7 +226,7 @@ export function executeOfflineQuery(dto: AiQueryDto): AiMessage {
     updatedContext.contextLabel = `Metro Corridors (${metroProjects.length})`;
     structured = buildSectorResponse('Metro', metroProjects, isHindi);
   }
-  // 7. Delayed Projects
+  // 12. Delayed Projects
   else if (
     q.includes('delayed') ||
     q.includes('late') ||
@@ -176,28 +240,28 @@ export function executeOfflineQuery(dto: AiQueryDto): AiMessage {
     updatedContext.contextLabel = `Delayed Corridors (${delayed.length})`;
     structured = buildDelayedProjectsResponse(delayed, isHindi);
   }
-  // 8. Specific Project: NH-48 / Bharatmala
+  // 13. Specific Project: NH-48 / Bharatmala
   else if (q.includes('nh-48') || q.includes('nh48') || q.includes('bharatmala')) {
     const proj = LOCAL_PROJECTS.find((p) => p.id === 'DOLR-2026-0084') || LOCAL_PROJECTS[0];
     updatedContext.selectedProjectId = proj.id;
     updatedContext.selectedProjectName = proj.name;
     structured = buildSingleProjectResponse(proj, isHindi);
   }
-  // 9. Specific Project: Lucknow Metro
+  // 14. Specific Project: Lucknow Metro
   else if (q.includes('lucknow')) {
     const proj = LOCAL_PROJECTS.find((p) => p.id === 'DOLR-2026-0059') || LOCAL_PROJECTS[3];
     updatedContext.selectedProjectId = proj.id;
     updatedContext.selectedProjectName = proj.name;
     structured = buildSingleProjectResponse(proj, isHindi);
   }
-  // 10. Specific Project: Pune-Nashik
+  // 15. Specific Project: Pune-Nashik
   else if (q.includes('pune') || q.includes('nashik')) {
     const proj = LOCAL_PROJECTS.find((p) => p.id === 'DOLR-2026-0066') || LOCAL_PROJECTS[2];
     updatedContext.selectedProjectId = proj.id;
     updatedContext.selectedProjectName = proj.name;
     structured = buildSingleProjectResponse(proj, isHindi);
   }
-  // 11. Most Critical / High Risk
+  // 16. Most Critical / High Risk
   else if (
     q.includes('critical') ||
     q.includes('गंभीर') ||
@@ -285,6 +349,224 @@ function isGreeting(q: string): boolean {
 }
 
 // ── Response Builders ──────────────────────────────────────────────────────────
+
+function buildStageIntelligenceResponse(profile: ProjectLifecycleProfile, isHindi: boolean): AiStructuredResponse {
+  const currentStage = profile.stages.find((s) => s.step === profile.currentStageStep) || profile.stages[4];
+  const stageIdx = profile.stages.findIndex((s) => s.step === currentStage.step);
+  const nextStage = stageIdx >= 0 && stageIdx < profile.stages.length - 1 ? profile.stages[stageIdx + 1] : undefined;
+
+  const text = isHindi
+    ? `**${profile.projectName}** (${profile.projectId}) वर्तमान में **चरण ${currentStage.step}: ${currentStage.title}** (RFCTLARR अधिनियम 2013 की **${currentStage.legalSection}**) पर अग्रसर है।\n\n` +
+      `• **चरण स्थिति:** ${currentStage.status.toUpperCase()}\n` +
+      `• **वैधानिक समयसीमा (SLA):** वैधानिक समाप्ति से पूर्व ${currentStage.slaDaysRemaining} दिन शेष (${currentStage.statutorySLA})\n` +
+      `• **संबद्ध पार्सल:** ${currentStage.affectedParcels} पार्सल (${currentStage.clearedParcels} निस्तारित)\n` +
+      `• **प्रभावित परिवार:** ${currentStage.affectedFamilies} परिवार\n` +
+      `• **सक्षम प्राधिकारी (CALA):** ${currentStage.authority}\n` +
+      `• **अनिवार्य दस्तावेज:** ${currentStage.documents.join(', ')}\n` +
+      `• **अग्रिम कार्रवाई:** ${currentStage.criticalPendingAction}\n` +
+      `• **अगला चरण:** ${nextStage ? `चरण ${nextStage.step}: ${nextStage.title} (${nextStage.legalSection})` : 'राजस्व बंदोबस्त एवं पूर्णता प्रमाणपत्र'}`
+    : `**${profile.projectName}** (${profile.projectId}) is currently progressing through **Stage ${currentStage.step}: ${currentStage.title}** governed under **${currentStage.legalSection}** of the RFCTLARR Act 2013.\n\n` +
+      `• **Current Stage Status:** ${currentStage.status.toUpperCase()}\n` +
+      `• **Statutory SLA Clock:** ${currentStage.slaDaysRemaining} days remaining (${currentStage.statutorySLA})\n` +
+      `• **Scope of Stage:** ${currentStage.affectedParcels} land parcels (${currentStage.clearedParcels} cleared)\n` +
+      `• **Affected Families:** ${currentStage.affectedFamilies} families\n` +
+      `• **Competent Authority:** ${currentStage.authority}\n` +
+      `• **Mandatory Compliance Documents:** ${currentStage.documents.join(', ')}\n` +
+      `• **Critical Pending Milestone:** ${currentStage.criticalPendingAction}\n` +
+      `• **Next Transition:** ${nextStage ? `Stage ${nextStage.step}: ${nextStage.title} (${nextStage.legalSection})` : 'Revenue Closure & Mutation Certificate'}`;
+
+  return {
+    title: isHindi ? `अधिग्रहण चरण विश्लेषण: ${profile.projectName}` : `Statutory Stage Intelligence: ${profile.projectName}`,
+    summary: text,
+    language: isHindi ? 'hi' : 'en',
+    detectedIntent: 'PROJECT_STAGE_INTELLIGENCE',
+    metrics: [
+      { label: isHindi ? 'वर्तमान चरण' : 'Current Stage', value: `Stage ${currentStage.step}/09`, variant: 'info' },
+      { label: isHindi ? 'वैधानिक धारा' : 'Statutory Section', value: currentStage.legalSection, variant: 'default' },
+      { label: isHindi ? 'SLA शेष दिन' : 'SLA Clock', value: `${currentStage.slaDaysRemaining} Days`, variant: currentStage.slaDaysRemaining <= 15 ? 'danger' : 'warning' },
+      { label: isHindi ? 'कुल प्रगति' : 'Overall Progress', value: `${profile.overallProgress}%`, variant: 'success' },
+    ],
+    facts: [
+      `Corridor: ${profile.corridorName}`,
+      `Total Land: ${profile.landRequiredHa} Ha (${profile.landPossessedHa} Ha possessed)`,
+      `Compensation: ₹${profile.compensationDisbursedCr} Cr disbursed of ₹${profile.compensationAssessedCr} Cr assessed`,
+    ],
+    actions: [
+      { label: isHindi ? 'जीवनचक्र चरण खोलें' : 'Open Acquisition Lifecycle', actionType: 'NAVIGATE', payload: { url: `/lifecycle?project=${profile.projectId}&stage=${currentStage.step}` } },
+      { label: isHindi ? 'मानचित्र पर पार्सल देखें' : 'View Parcels on GIS', actionType: 'NAVIGATE', payload: { url: `/gis?project=${profile.projectId}&stage=${currentStage.step}` } },
+    ],
+    sources: ['DoLR Central Land Records Registry', 'RFCTLARR Act 2013 Statutory Tracker'],
+  };
+}
+
+function buildPendingPossessionResponse(profile: ProjectLifecycleProfile, isHindi: boolean): AiStructuredResponse {
+  const pendingParcels = profile.totalParcels - profile.clearedParcels;
+  const pendingHa = Math.max(0, Math.round((profile.landRequiredHa - profile.landPossessedHa) * 10) / 10);
+  const pendingPct = Math.round((pendingParcels / profile.totalParcels) * 100);
+
+  const text = isHindi
+    ? `**${profile.projectName}** (${profile.projectId}) में वर्तमान में **${pendingParcels} पार्सल (${pendingPct}%)**, कुल **${pendingHa} हेक्टेयर**, भौतिक कब्ज़े (Possession Handover) के लिए लंबित हैं।\n\n` +
+      `• **कब्ज़ा प्राप्त भूमि:** ${profile.landPossessedHa} Ha (${profile.clearedParcels} पार्सल) कार्यदायी संस्था को सुपुर्द।\n` +
+      `• **वैधानिक सुरक्षा (धारा 38):** RFCTLARR 2013 की धारा 38(1) के अनुसार जब तक शत-प्रतिशत (100%) मुआवजा बैंक खाते में जमा नहीं हो जाता और मौद्रिक पुनर्वास (R&R) देयकों का भुगतान नहीं हो जाता, तब तक किसी भी निजी भूमि पर जबरन भौतिक कब्ज़ा नहीं लिया जा सकता।\n` +
+      `• **लंबित होने के मुख्य कारण:**\n` +
+      `  1. 84 पार्सलों पर अंतिम सीमांकन और रबी फसल कटाई का 60-दिवसीय वैधानिक नोटिस सक्रिय है।\n` +
+      `  2. 42 पार्सल आदर्श पुनर्वास कॉलोनी (Resettlement Colony Phase-2) के पूर्ण होने की प्रतीक्षा में हैं।\n` +
+      `  3. 20 पार्सल उच्च न्यायालय/LARRA में स्वामित्व विवाद एवं यथास्थिति (Status Quo) के अधीन हैं (उदा. सर्वे #102/1A)।`
+    : `In **${profile.projectName}** (${profile.projectId}), there are currently **${pendingParcels} land parcels (${pendingPct}%)**, totaling **${pendingHa} Ha**, pending physical possession handover.\n\n` +
+      `• **Possession Secured:** ${profile.landPossessedHa} Ha (${profile.clearedParcels} parcels) cleared and transferred to the Requiring Body.\n` +
+      `• **Statutory Mandate (Section 38):** Under Section 38(1) of RFCTLARR Act 2013, the Collector cannot take possession until 100% of compensation award has been deposited and monetary R&R entitlements disbursed to affected families.\n` +
+      `• **Breakdown of Pending Parcels:**\n` +
+      `  1. 84 parcels undergoing final boundary stone pegging & 60-day standing crop harvest notice.\n` +
+      `  2. 42 parcels awaiting completion of Model Resettlement Colony Phase-2.\n` +
+      `  3. 20 parcels under active judicial stay/LARRA title dispute (e.g., Survey #102/1A).`;
+
+  return {
+    title: isHindi ? 'लंबित कब्ज़ा स्थिति (धारा 38)' : 'Pending Land Possession Telemetry (Section 38)',
+    summary: text,
+    language: isHindi ? 'hi' : 'en',
+    detectedIntent: 'PENDING_POSSESSION_INTELLIGENCE',
+    metrics: [
+      { label: isHindi ? 'लंबित पार्सल' : 'Pending Possession', value: `${pendingParcels} Parcels`, variant: 'warning' },
+      { label: isHindi ? 'लंबित क्षेत्रफल' : 'Pending Area', value: `${pendingHa} Ha`, variant: 'info' },
+      { label: isHindi ? 'कब्ज़ा पूर्ण %' : 'Possession Secured', value: `${100 - pendingPct}%`, variant: 'success' },
+      { label: isHindi ? 'विवादित पार्सल' : 'Litigated / Injunction', value: `${profile.highRiskParcels} Parcels`, variant: 'danger' },
+    ],
+    actions: [
+      { label: isHindi ? 'चरण 08: कब्ज़ा हस्तांतरण देखें' : 'View Possession Stage (Stage 08)', actionType: 'NAVIGATE', payload: { url: `/lifecycle?project=${profile.projectId}&stage=08` } },
+      { label: isHindi ? 'मानचित्र पर पार्सल देखें' : 'Inspect Parcels on GIS Map', actionType: 'NAVIGATE', payload: { url: `/gis?project=${profile.projectId}&stage=08` } },
+    ],
+    sources: ['Section 38 Possession Handover Registers', 'CALA District Revenue Portal'],
+  };
+}
+
+function buildPendingCompensationResponse(profile: ProjectLifecycleProfile, isHindi: boolean): AiStructuredResponse {
+  const pendingCr = profile.pendingCompensationCr;
+  const disbursedPct = Math.round((profile.compensationDisbursedCr / profile.compensationAssessedCr) * 100);
+
+  const text = isHindi
+    ? `**${profile.projectName}** (${profile.projectId}) में कुल स्वीकृत मुआवजा **₹${profile.compensationAssessedCr} करोड़** में से **₹${profile.compensationDisbursedCr} करोड़ (${disbursedPct}%)** PFMS DBT के माध्यम से वितरित हो चुका है।\n\n` +
+      `वर्तमान में **₹${pendingCr} करोड़** का मुआवजा वितरण प्रक्रियाधीन/लंबित है:\n\n` +
+      `• **मुआवजा घटक (RFCTLARR 2013):** मूल सर्कल दर + 100% सोलेशियम (धारा 30) + 12% वैधानिक अतिरिक्त ब्याज (धारा 30(3))।\n` +
+      `• **लंबित राशि का विवरण:**\n` +
+      `  1. ₹184 करोड़: 12 बैंक बैचों में आधार-PFMS एनपीसीआई सीडिंग और बायोमेट्रिक ई-केवाईसी सत्यापन के कारण होल्ड पर।\n` +
+      `  2. ₹82 करोड़: सह-खातेदारों के आपसी विभाजन सहमति पत्र (Joint Khata partition consent) जमा न होने के कारण।\n` +
+      `  3. ₹46 करोड़: दीवानी/उच्च न्यायालय में धारा 64/76 संदर्भ के तहत LARRA ट्रिब्यूनल एस्क्रो खाते में जमा कराने हेतु चिन्हित।\n\n` +
+      `राष्ट्रीय स्तर पर सभी सक्रिय परियोजनाओं में कुल ₹5,010 करोड़ का मुआवजा वितरण शेष है।`
+    : `In **${profile.projectName}** (${profile.projectId}), out of total assessed compensation of **₹${profile.compensationAssessedCr} Cr**, **₹${profile.compensationDisbursedCr} Cr (${disbursedPct}%)** has been successfully disbursed directly into farmers' accounts via PFMS DBT.\n\n` +
+      `Currently, **₹${pendingCr} Cr** remains pending disbursal:\n\n` +
+      `• **Statutory Compensation Formula:** Base Market Value + 100% Solatium (Section 30) + 12% statutory additional interest per annum (Section 30(3)).\n` +
+      `• **Breakdown of Pending Funds:**\n` +
+      `  1. ₹184 Cr: Pending NPCI Aadhaar seeding & biometric e-KYC across 12 banking batches.\n` +
+      `  2. ₹82 Cr: Joint khata family partition disputes pending succession mutation certificates.\n` +
+      `  3. ₹46 Cr: Earmarked for statutory deposit under Section 76 with the LARRA Authority escrow.\n\n` +
+      `Nationally across all monitored infrastructure corridors, approximately ₹5,010 Cr remains in pipeline disbursal.`;
+
+  return {
+    title: isHindi ? 'मुआवजा वितरण एवं बकाया विश्लेषण' : 'Compensation Disbursal & Pending Analysis',
+    summary: text,
+    language: isHindi ? 'hi' : 'en',
+    detectedIntent: 'COMPENSATION_PENDING_INTELLIGENCE',
+    metrics: [
+      { label: isHindi ? 'कुल स्वीकृत' : 'Assessed Award', value: `₹${profile.compensationAssessedCr} Cr`, variant: 'info' },
+      { label: isHindi ? 'डीबीटी वितरित' : 'Disbursed (PFMS)', value: `₹${profile.compensationDisbursedCr} Cr`, variant: 'success' },
+      { label: isHindi ? 'लंबित मुआवजा' : 'Pending Disbursal', value: `₹${pendingCr} Cr`, variant: 'danger' },
+      { label: isHindi ? 'भुगतान प्रगति %' : 'Disbursal %', value: `${disbursedPct}%`, variant: 'warning' },
+    ],
+    actions: [
+      { label: isHindi ? 'चरण 07: मुआवजा वितरण देखें' : 'View Compensation Stage (Stage 07)', actionType: 'NAVIGATE', payload: { url: `/lifecycle?project=${profile.projectId}&stage=07` } },
+      { label: isHindi ? 'राष्ट्रीय जीआईएस' : 'Inspect Corridors on GIS', actionType: 'NAVIGATE', payload: { url: `/gis?project=${profile.projectId}` } },
+    ],
+    sources: ['Public Financial Management System (PFMS)', 'CALA District Award Decrees'],
+  };
+}
+
+function buildHighRiskParcelsResponse(profile: ProjectLifecycleProfile, isHindi: boolean): AiStructuredResponse {
+  const highRiskCount = profile.highRiskParcels || 14;
+
+  const text = isHindi
+    ? `**${profile.projectName}** में Bhu-Mitra एआई रिस्क प्रेडिक्टर ने कुल ${profile.totalParcels} में से **${highRiskCount} उच्च जोखिम वाले पार्सल (High-Risk Parcels)** चिन्हित किए हैं:\n\n` +
+      `1. **पार्सल #102-1A (सर्वे 102/1A, खेड़ा):**\n` +
+      `   • श्रेणी: उच्च न्यायालय यथास्थिति स्थगनादेश (High Court Injunction)\n` +
+      `   • समस्या: मूल खातेदार बनाम विधिक उत्तराधिकारियों में स्वामित्व विवाद। SLA -8 दिन विलंबित।\n` +
+      `   • अनुशंसित कार्रवाई: धारा 76 के तहत मुआवजा राशि LARRA ट्रिब्यूनल में जमा कराकर स्थगनादेश रिक्त कराने की याचिका।\n\n` +
+      `2. **पार्सल #105-C (सर्वे 105/C, आणंद):**\n` +
+      `   • श्रेणी: अनुसूचित जनजाति भूमि वैधानिक संरक्षण (RFCTLARR धारा 41)\n` +
+      `   • समस्या: विशेष ग्राम सभा में पूर्व सहमति कोरम 61% (वैधानिक आवश्यकता 66.7% से कम)।\n` +
+      `   • अनुशंसित कार्रवाई: अनुविभागीय अधिकारी (SDM) की अध्यक्षता में 15 दिनों में विशेष पूरक ग्राम सभा का आयोजन।\n\n` +
+      `3. **पार्सल #104-B (सर्वे 104/B, आणंद):**\n` +
+      `   • श्रेणी: फलदार वृक्ष एवं निजी नलकूप मूल्यांकन आपत्ति (धारा 15 सुनवाई)\n` +
+      `   • स्थिति: उद्यान विभाग से पुनर्मूल्यांकन रिपोर्ट प्राप्त, अनुपूरक अवार्ड जारी होना शेष।`
+    : `In **${profile.projectName}**, Bhu-Mitra Multi-Factor Risk Intelligence has flagged **${highRiskCount} high-risk land parcels** out of ${profile.totalParcels} total parcels:\n\n` +
+      `1. **Parcel #102-1A (Survey 102/1A, Kheda) — HIGH RISK:**\n` +
+      `   • Bottleneck: High Court Interim Stay Order (Status Quo) due to legal heir succession suit. SLA breached by -8 days.\n` +
+      `   • Statutory Remedy: Deposit disputed award with LARRA Authority under Section 76 to vacate injunction.\n\n` +
+      `2. **Parcel #105-C (Survey 105/C, Anand) — CRITICAL RISK:**\n` +
+      `   • Bottleneck: Tribal land category under RFCTLARR Section 41. Gram Sabha prior informed consent quorum reached 61% (below the statutory 66.7% threshold).\n` +
+      `   • Statutory Remedy: Convene Special Supplementary Gram Sabha presided over by Sub-Divisional Magistrate within 14 days.\n\n` +
+      `3. **Parcel #104-B (Survey 104/B, Anand) — MEDIUM RISK:**\n` +
+      `   • Bottleneck: Horticultural valuation objection regarding 42 fruiting mango trees and tube well.\n` +
+      `   • Status: District Horticulture Officer submitted re-valuation report of ₹3.42 L; supplementary award pending gazetting.`;
+
+  return {
+    title: isHindi ? 'उच्च जोखिम पार्सल विश्लेषण' : 'High-Risk Land Parcel Dossiers',
+    summary: text,
+    language: isHindi ? 'hi' : 'en',
+    detectedIntent: 'HIGH_RISK_PARCELS_INTELLIGENCE',
+    metrics: [
+      { label: isHindi ? 'कुल उच्च जोखिम' : 'High-Risk Parcels', value: `${highRiskCount} Parcels`, variant: 'danger' },
+      { label: isHindi ? 'न्यायालय स्थगन' : 'Judicial Stays', value: '6 Parcels', variant: 'danger' },
+      { label: isHindi ? 'ग्राम सभा कोरम' : 'Gram Sabha Deficit', value: '3 Parcels', variant: 'warning' },
+      { label: isHindi ? 'पुनर्मूल्यांकन' : 'Valuation Disputes', value: '5 Parcels', variant: 'info' },
+    ],
+    actions: [
+      { label: isHindi ? 'विवादित पार्सल 102-1A GIS पर देखें' : 'View Litigated Parcel 102-1A on GIS', actionType: 'NAVIGATE', payload: { url: `/gis?project=${profile.projectId}&parcel=102-1A` } },
+      { label: isHindi ? 'जोखिम इंटेलिजेंस मॉड्यूल' : 'Open Risk Intelligence', actionType: 'NAVIGATE', payload: { url: '/risk' } },
+      { label: isHindi ? 'अधिग्रहण जीवनचक्र' : 'Open Lifecycle Monitor', actionType: 'NAVIGATE', payload: { url: `/lifecycle?project=${profile.projectId}` } },
+    ],
+    sources: ['DoLR Spatial Encroachment Sentinel', 'District Litigation Docket System'],
+  };
+}
+
+function buildAwaitingRRResponse(profile: ProjectLifecycleProfile, isHindi: boolean): AiStructuredResponse {
+  const totalFamilies = profile.affectedFamilies || 612;
+  const resettled = profile.rehabilitatedFamilies || 430;
+  const awaiting = totalFamilies - resettled;
+  const pct = profile.rrCompletionPct || Math.round((resettled / totalFamilies) * 100);
+
+  const text = isHindi
+    ? `**${profile.projectName}** (${profile.projectId}) में कुल **${totalFamilies} प्रभावित परिवारों** में से **${resettled} परिवार (${pct}%)** पुनर्वासित किए जा चुके हैं।\n\n` +
+      `वर्तमान में **${awaiting} परिवार (${100 - pct}%)** पुनर्वास एवं व्यवस्थापन (R&R) की विभिन्न प्रक्रियाओं में लाभ मिलने की प्रतीक्षा में हैं:\n\n` +
+      `• **वैधानिक सुरक्षा (द्वितीय अनुसूची):** RFCTLARR अधिनियम 2013 की धारा 38 के अनुसार जब तक विस्थापित परिवारों को पक्के आवासीय भूखंड अथवा एकमुश्त पैकेज नहीं मिल जाता, तब तक उनके निवास स्थान का अधिग्रहण पूर्ण नहीं माना जा सकता।\n` +
+      `• **लंबित 182 परिवारों का वर्गीकरण:**\n` +
+      `  1. 110 परिवार: नवरंगपुरा मॉडल पुनर्वास कॉलोनी (Resettlement Colony Phase-2) में निर्मित पक्के मकानों की चाबी और स्वामित्व पट्टे की प्रतीक्षा में (कॉलोनी निर्माण 85% पूर्ण)।\n` +
+      `  2. 48 परिवार: भूमि के बदले ₹5,00,000 एकमुश्त पुनर्वास अनुदान (One-time Lump sum Grant) का विकल्प चुना है, जिसकी PFMS स्वीकृति अंतिम चरण में है।\n` +
+      `  3. 24 परिवार: राष्ट्रीय ग्रामीण आजीविका मिशन (NRLM) के तहत आजीविका पुनर्स्थापना व कौशल विकास प्रशिक्षण प्राप्त कर रहे हैं।`
+    : `In **${profile.projectName}** (${profile.projectId}), out of **${totalFamilies} affected families**, **${resettled} families (${pct}%)** have been fully resettled and provided mandatory statutory entitlements.\n\n` +
+      `Currently, **${awaiting} families (${100 - pct}%)** are awaiting completion of Rehabilitation & Resettlement (R&R) entitlements:\n\n` +
+      `• **Statutory Inviolability (Second Schedule):** RFCTLARR Act 2013 Section 38 explicitly mandates that no physical eviction from homes can occur until alternative houses or one-time rehabilitation grants are physically delivered.\n` +
+      `• **Breakdown of 182 Awaiting Families:**\n` +
+      `  1. 110 families: Awaiting handover of constructed pucca houses in Navrangpura Model Resettlement Colony Phase-2 (infrastructure is 85% physically complete).\n` +
+      `  2. 48 families: Opted for ₹5,00,000 one-time rehabilitation financial grant in lieu of land; PFMS batch clearance currently pending at treasury.\n` +
+      `  3. 24 families: Enrolled in livelihood skill development and self-employment transition programs under NRLM.`;
+
+  return {
+    title: isHindi ? 'पुनर्वास एवं व्यवस्थापन (R&R) स्थिति' : 'Rehabilitation & Resettlement (R&R) Intelligence',
+    summary: text,
+    language: isHindi ? 'hi' : 'en',
+    detectedIntent: 'R_AND_R_INTELLIGENCE',
+    metrics: [
+      { label: isHindi ? 'कुल प्रभावित परिवार' : 'Affected Families', value: `${totalFamilies}`, variant: 'default' },
+      { label: isHindi ? 'पुनर्वासित परिवार' : 'Resettled Families', value: `${resettled} (${pct}%)`, variant: 'success' },
+      { label: isHindi ? 'लंबित परिवार' : 'Awaiting R&R', value: `${awaiting} (${100 - pct}%)`, variant: 'warning' },
+      { label: isHindi ? 'पुनर्वास कॉलोनी' : 'Colony Phase-2', value: '85% Built', variant: 'info' },
+    ],
+    actions: [
+      { label: isHindi ? 'चरण 06: R&R योजना देखें' : 'View R&R Stage in Lifecycle', actionType: 'NAVIGATE', payload: { url: `/lifecycle?project=${profile.projectId}&stage=06` } },
+      { label: isHindi ? 'परियोजना निर्देशिका' : 'Open Projects Directory', actionType: 'NAVIGATE', payload: { url: '/projects' } },
+    ],
+    sources: ['RFCTLARR 2013 Second Schedule', 'State R&R Commissionerate Telemetry'],
+  };
+}
 
 function buildSectorResponse(sector: string, projects: ProjectDto[], isHindi: boolean): AiStructuredResponse {
   const sectorHindiMap: Record<string, string> = {
